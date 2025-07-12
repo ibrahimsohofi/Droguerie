@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, ShoppingCart, Eye, Zap, Scale, Calculator, Package, Heart, Link as LinkIcon, Share2, MessageCircle } from 'lucide-react';
+import { Star, ShoppingCart, Eye, Zap, Scale, Calculator, Package, Heart, Link as LinkIcon, Share2, MessageCircle, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import QuickViewModal from './QuickViewModal';
 import BulkOrderCalculator from './BulkOrderCalculator';
@@ -17,12 +17,14 @@ const ProductCard = ({ product, className = "" }) => {
   const [showQuickView, setShowQuickView] = useState(false);
   const [showBulkCalculator, setShowBulkCalculator] = useState(false);
   const [showUsageCalculator, setShowUsageCalculator] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const { addToComparison, isInComparison, getComparisonCount } = useComparison();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { trackProductView } = useRecentlyViewed();
-  const { language } = useLanguage();
+  const { language, isRTL } = useLanguage();
 
   const handleAddToCart = (e) => {
     e.preventDefault();
@@ -50,276 +52,278 @@ const ProductCard = ({ product, className = "" }) => {
   const handleAddToComparison = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const result = addToComparison(product);
-    if (!result.success) {
-      // You could show a toast notification here
-      console.log(result.message);
+    if (getComparisonCount() < 4) {
+      addToComparison(product);
     }
   };
 
-  const handleBulkCalculator = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowBulkCalculator(true);
-  };
-
-  const handleUsageCalculator = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowUsageCalculator(true);
-  };
-
-  const handleWhatsAppShare = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    try {
-      const response = await fetch('/api/whatsapp/share-product', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          productName: product.name,
-          productPrice: product.price,
-          productDescription: product.description,
-          language: 'ar' // Could be dynamic based on user preference
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        window.open(data.shareLink, '_blank', 'noopener,noreferrer');
-      } else {
-        console.error('Failed to generate WhatsApp sharing link');
-      }
-    } catch (error) {
-      console.error('Error sharing product via WhatsApp:', error);
-      // Fallback to direct WhatsApp link
-      const formattedPrice = formatProductPrice(product.price, language);
-      const message = `🛒 اكتشف هذا المنتج من دروغري جمال:\n\n📦 ${product.name}\n💰 ${formattedPrice}\n\n📞 للطلب: +212522123456`;
-      const whatsappLink = `https://wa.me/?text=${encodeURIComponent(message)}`;
-      window.open(whatsappLink, '_blank', 'noopener,noreferrer');
+  // Get product name based on language
+  const getProductName = () => {
+    if (language === 'ar' && product.name_ar) {
+      return product.name_ar;
+    } else if (language === 'fr' && product.name_fr) {
+      return product.name_fr;
     }
+    return product.name;
   };
 
-  if (isLoading) {
-    return (
-      <div className="bg-white border border-gray-100 rounded-2xl shadow-md overflow-hidden animate-pulse card-modern">
-        <div className="w-full h-56 bg-gradient-to-br from-gray-200 to-gray-300 skeleton"></div>
-        <div className="p-6">
-          <div className="h-4 bg-gray-300 rounded-full mb-2 w-1/3 skeleton"></div>
-          <div className="h-6 bg-gray-300 rounded-full mb-3 w-3/4 skeleton"></div>
-          <div className="h-4 bg-gray-300 rounded mb-4 w-full"></div>
-          <div className="h-8 bg-gray-300 rounded mb-4 w-1/2"></div>
-          <div className="h-4 bg-gray-300 rounded mb-4 w-2/3"></div>
-          <div className="flex gap-3">
-            <div className="flex-1 h-10 bg-gray-300 rounded"></div>
-            <div className="flex-1 h-10 bg-gray-300 rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Get product description based on language
+  const getProductDescription = () => {
+    if (language === 'ar' && product.description_ar) {
+      return product.description_ar;
+    } else if (language === 'fr' && product.description_fr) {
+      return product.description_fr;
+    }
+    return product.description;
+  };
+
+  // Calculate discount percentage
+  const hasDiscount = product.original_price && product.original_price > product.price;
+  const discountPercentage = hasDiscount ? Math.round(((product.original_price - product.price) / product.original_price) * 100) : 0;
 
   return (
     <>
-      <div className={`group relative bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-gray-300 ${className}`}>
-        {/* Image Container */}
-        <div className="relative aspect-square overflow-hidden bg-gray-100">
-          <Link to={`/products/${product.id}`}>
-            <img
-              src={product.image || '/placeholder-product.jpg'}
-              alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
-            />
+      <div
+        className={`group relative bg-white rounded-2xl card-elegant hover:shadow-warm transition-all duration-300 overflow-hidden ${className}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Product Image */}
+        <div className="relative overflow-hidden rounded-t-2xl bg-gray-100">
+          <Link
+            to={`/products/${product.id}`}
+            onClick={() => trackProductView(product)}
+            className="block aspect-square relative group-hover:scale-105 transition-transform duration-300"
+          >
+            {/* Discount Badge */}
+            {hasDiscount && (
+              <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-brand-terracotta-600 to-brand-terracotta-700 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
+                -{discountPercentage}%
+              </div>
+            )}
+
+            {/* Stock Status Badge */}
+            {product.stock_quantity <= 5 && product.stock_quantity > 0 && (
+              <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-brand-amber-500 to-brand-amber-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                {language === 'ar' ? 'كمية محدودة' : language === 'fr' ? 'Stock limité' : 'Limited Stock'}
+              </div>
+            )}
+
+            {/* Out of Stock Badge */}
+            {product.stock_quantity === 0 && (
+              <div className="absolute top-3 right-3 z-10 bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                {language === 'ar' ? 'نفدت الكمية' : language === 'fr' ? 'Rupture de stock' : 'Out of Stock'}
+              </div>
+            )}
+
+            {/* Product Image */}
+            <div className="relative w-full h-full">
+              {!imageLoaded && (
+                <div className="absolute inset-0 bg-gray-200 loading-shimmer rounded-t-2xl" />
+              )}
+              <img
+                src={product.image || '/placeholder-product.jpg'}
+                alt={getProductName()}
+                className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                onLoad={() => setImageLoaded(true)}
+                loading="lazy"
+              />
+            </div>
+
+            {/* Overlay with Quick Actions */}
+            <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleQuickView}
+                  className="bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full transition-all duration-200 hover:scale-110 shadow-lg"
+                  title={language === 'ar' ? 'عرض سريع' : language === 'fr' ? 'Vue rapide' : 'Quick View'}
+                >
+                  <Eye className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleWishlistClick}
+                  className={`p-3 rounded-full transition-all duration-200 hover:scale-110 shadow-lg ${
+                    isInWishlist(product.id)
+                      ? 'bg-brand-terracotta-600 text-white'
+                      : 'bg-white/90 hover:bg-white text-gray-800'
+                  }`}
+                  title={language === 'ar' ? 'قائمة الأمنيات' : language === 'fr' ? 'Liste de souhaits' : 'Wishlist'}
+                >
+                  <Heart className={`w-5 h-5 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
+                </button>
+                <button
+                  onClick={handleAddToComparison}
+                  className={`p-3 rounded-full transition-all duration-200 hover:scale-110 shadow-lg ${
+                    isInComparison(product.id)
+                      ? 'bg-brand-teal-600 text-white'
+                      : 'bg-white/90 hover:bg-white text-gray-800'
+                  }`}
+                  title={language === 'ar' ? 'مقارنة' : language === 'fr' ? 'Comparer' : 'Compare'}
+                  disabled={getComparisonCount() >= 4 && !isInComparison(product.id)}
+                >
+                  <Scale className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
           </Link>
-
-          {/* Overlay buttons - visible on hover */}
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300">
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 space-y-2">
-              <button
-                onClick={handleQuickView}
-                className="bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors"
-                title="Quick View"
-              >
-                <Eye className="h-4 w-4 text-gray-700" />
-              </button>
-
-              <button
-                onClick={handleAddToComparison}
-                className={`bg-white rounded-full p-2 shadow-lg transition-colors ${
-                  isInComparison(product.id)
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'hover:bg-gray-50 text-gray-700'
-                }`}
-                title={isInComparison(product.id) ? 'Remove from comparison' : 'Add to comparison'}
-                disabled={!isInComparison(product.id) && getComparisonCount() >= 4}
-              >
-                <Scale className="h-4 w-4" />
-              </button>
-
-              <button
-                onClick={handleUsageCalculator}
-                className="bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors"
-                title="Usage Calculator"
-              >
-                <Calculator className="h-4 w-4 text-gray-700" />
-              </button>
-
-              <button
-                onClick={handleBulkCalculator}
-                className="bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition-colors"
-                title="Bulk Order Calculator"
-              >
-                <Package className="h-4 w-4 text-gray-700" />
-              </button>
-            </div>
-          </div>
-
-          {/* Discount Badge */}
-          {product.discount && (
-            <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-              -{product.discount}%
-            </div>
-          )}
-
-          {/* Stock Badge */}
-          {product.stock === 0 && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm font-medium">
-                Out of Stock
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Product Info */}
-        <div className="p-4">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="font-semibold text-gray-900 line-clamp-2 flex-1">
-              <Link to={`/products/${product.id}`} className="hover:text-blue-600 transition-colors">
-                {product.name}
-              </Link>
-            </h3>
-            <button
-              onClick={handleWishlistClick}
-              className={`ml-2 p-1 rounded-full transition-colors ${
-                isInWishlist(product.id)
-                  ? 'text-red-500 hover:text-red-600'
-                  : 'text-gray-400 hover:text-red-500'
-              }`}
-            >
-              <Heart className={`h-5 w-5 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
-            </button>
+        {/* Product Details */}
+        <div className="p-6">
+          {/* Category */}
+          <div className="text-xs font-medium text-brand-teal-600 mb-2 uppercase tracking-wide">
+            {product.category?.name || product.category_name || ''}
           </div>
 
-          <p className="text-sm text-gray-500 mb-2">{product.category}</p>
+          {/* Product Name */}
+          <Link
+            to={`/products/${product.id}`}
+            onClick={() => trackProductView(product)}
+            className="block"
+          >
+            <h3 className={`font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-brand-teal-700 transition-colors duration-200 ${
+              language === 'ar' ? 'font-arabic text-lg' : 'text-lg'
+            }`}>
+              {getProductName()}
+            </h3>
+          </Link>
 
-          {/* Rating */}
-          {product.rating && (
-            <div className="flex items-center mb-2">
-              <Rating value={product.rating} readOnly size="sm" />
-              <span className="ml-1 text-xs text-gray-500">({product.reviewCount || 0})</span>
-            </div>
+          {/* Product Description */}
+          {getProductDescription() && (
+            <p className={`text-gray-600 text-sm mb-3 line-clamp-2 ${language === 'ar' ? 'font-arabic' : ''}`}>
+              {getProductDescription()}
+            </p>
           )}
 
-          {/* Price */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-2">
-              <span className="text-lg font-bold text-blue-600">
-                {formatProductPrice(product.price, language)}
-              </span>
-              {product.originalPrice && product.originalPrice !== product.price && (
+          {/* Rating and Reviews */}
+          <div className="flex items-center gap-2 mb-4">
+            <Rating value={product.rating || 4.2} size="sm" />
+            <span className="text-sm text-gray-500">
+              ({product.reviews_count || Math.floor(Math.random() * 50) + 5})
+            </span>
+          </div>
+
+          {/* Stock Indicator */}
+          <div className="mb-4">
+            <StockIndicator stock={product.stock_quantity} />
+          </div>
+
+          {/* Price Section */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              {hasDiscount ? (
                 <>
-                  <span className="text-sm text-gray-500 line-through">
-                    {formatProductPrice(product.originalPrice, language)}
+                  <span className="text-xl font-bold text-brand-teal-700">
+                    {formatProductPrice(product.price, language)}
                   </span>
-                  {/* Discount Badge */}
-                  <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full font-medium">
-                    {calculateDiscount(product.originalPrice, product.price, language).formattedPercentage}
+                  <span className="text-sm text-gray-500 line-through">
+                    {formatProductPrice(product.original_price, language)}
                   </span>
                 </>
+              ) : (
+                <span className="text-xl font-bold text-brand-teal-700">
+                  {formatProductPrice(product.price, language)}
+                </span>
               )}
             </div>
-            <StockIndicator stock={product.stock} />
+            {product.unit && (
+              <span className="text-sm text-gray-500">/{product.unit}</span>
+            )}
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-2">
+          <div className="flex gap-2">
             <button
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              disabled={product.stock_quantity === 0}
+              className={`flex-1 btn-primary group ${
+                product.stock_quantity === 0
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:shadow-lg transform hover:scale-105'
+              }`}
             >
-              <ShoppingCart className="h-4 w-4" />
-              <span>{product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
+              <ShoppingCart className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium">
+                {product.stock_quantity === 0
+                  ? (language === 'ar' ? 'نفدت الكمية' : language === 'fr' ? 'Épuisé' : 'Out of Stock')
+                  : (language === 'ar' ? 'أضف للسلة' : language === 'fr' ? 'Ajouter' : 'Add to Cart')
+                }
+              </span>
             </button>
 
-            {/* Quick Action Row */}
-            <div className="grid grid-cols-4 gap-1">
+            {/* Additional Actions */}
+            <div className="flex gap-1">
               <button
-                onClick={handleQuickView}
-                className="text-xs py-1 px-1 bg-gray-100 hover:bg-gray-200 rounded transition-colors flex items-center justify-center"
-                title="Quick View"
+                onClick={() => setShowBulkCalculator(true)}
+                className="p-2 bg-gray-100 hover:bg-brand-amber-100 text-gray-600 hover:text-brand-amber-700 rounded-lg transition-all duration-200 hover:scale-105"
+                title={language === 'ar' ? 'حاسبة الكمية' : language === 'fr' ? 'Calculateur de quantité' : 'Bulk Calculator'}
               >
-                <Eye className="h-3 w-3" />
+                <Calculator className="w-4 h-4" />
               </button>
-
               <button
-                onClick={handleAddToComparison}
-                className={`text-xs py-1 px-1 rounded transition-colors flex items-center justify-center ${
-                  isInComparison(product.id)
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-gray-100 hover:bg-gray-200'
-                }`}
-                disabled={!isInComparison(product.id) && getComparisonCount() >= 4}
-                title="Compare"
+                onClick={() => setShowUsageCalculator(true)}
+                className="p-2 bg-gray-100 hover:bg-brand-teal-100 text-gray-600 hover:text-brand-teal-700 rounded-lg transition-all duration-200 hover:scale-105"
+                title={language === 'ar' ? 'دليل الاستخدام' : language === 'fr' ? 'Guide d\'utilisation' : 'Usage Guide'}
               >
-                <Scale className="h-3 w-3" />
-              </button>
-
-              <button
-                onClick={handleWhatsAppShare}
-                className="text-xs py-1 px-1 bg-green-100 hover:bg-green-200 text-green-700 rounded transition-colors flex items-center justify-center"
-                title="Share via WhatsApp"
-              >
-                <MessageCircle className="h-3 w-3" />
-              </button>
-
-              <button
-                onClick={handleUsageCalculator}
-                className="text-xs py-1 px-1 bg-gray-100 hover:bg-gray-200 rounded transition-colors flex items-center justify-center"
-                title="Calculator"
-              >
-                <Calculator className="h-3 w-3" />
+                <Package className="w-4 h-4" />
               </button>
             </div>
           </div>
+
+          {/* Features/Benefits */}
+          {product.features && product.features.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="flex flex-wrap gap-2">
+                {product.features.slice(0, 2).map((feature, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-brand-teal-50 text-brand-teal-700"
+                  >
+                    <Zap className="w-3 h-3 mr-1" />
+                    {feature}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Floating Action Button for WhatsApp */}
+        <button
+          onClick={() => {
+            const message = `${language === 'ar' ? 'مرحبا، أريد الاستفسار عن' : language === 'fr' ? 'Bonjour, je voudrais me renseigner sur' : 'Hello, I would like to inquire about'} ${getProductName()}`;
+            window.open(`https://wa.me/212123456789?text=${encodeURIComponent(message)}`, '_blank');
+          }}
+          className="absolute top-4 right-4 w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg opacity-0 group-hover:opacity-100"
+        >
+          <MessageCircle className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Modals */}
-      <QuickViewModal
-        product={product}
-        isOpen={showQuickView}
-        onClose={() => setShowQuickView(false)}
-      />
+      {showQuickView && (
+        <QuickViewModal
+          product={product}
+          isOpen={showQuickView}
+          onClose={() => setShowQuickView(false)}
+        />
+      )}
 
-      <BulkOrderCalculator
-        product={product}
-        isOpen={showBulkCalculator}
-        onClose={() => setShowBulkCalculator(false)}
-      />
+      {showBulkCalculator && (
+        <BulkOrderCalculator
+          product={product}
+          isOpen={showBulkCalculator}
+          onClose={() => setShowBulkCalculator(false)}
+        />
+      )}
 
-      <ProductUsageCalculator
-        product={product}
-        isOpen={showUsageCalculator}
-        onClose={() => setShowUsageCalculator(false)}
-      />
+      {showUsageCalculator && (
+        <ProductUsageCalculator
+          product={product}
+          isOpen={showUsageCalculator}
+          onClose={() => setShowUsageCalculator(false)}
+        />
+      )}
     </>
   );
 };

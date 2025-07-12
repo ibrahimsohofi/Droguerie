@@ -1,320 +1,510 @@
 const nodemailer = require('nodemailer');
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs').promises;
 
 class EmailService {
   constructor() {
     this.transporter = null;
-    this.isConfigured = false;
-    this.init();
+    this.initialized = false;
+    this.initialize();
   }
 
-  async init() {
+  async initialize() {
     try {
-      // Create transporter based on environment
-      if (process.env.NODE_ENV === 'production') {
-        // Production SMTP configuration
-        this.transporter = nodemailer.createTransporter({
-          host: process.env.SMTP_HOST,
-          port: process.env.SMTP_PORT,
-          secure: process.env.SMTP_SECURE === 'true',
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
-          }
-        });
-      } else {
-        // Development: Use Ethereal for testing
-        try {
-          // Try to use configured SMTP first
-          if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-            this.transporter = nodemailer.createTransporter({
-              host: process.env.SMTP_HOST || 'smtp.gmail.com',
-              port: process.env.SMTP_PORT || 587,
-              secure: false,
-              auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-              }
-            });
-          } else {
-            // Fallback to Ethereal for testing
-            const testAccount = await nodemailer.createTestAccount();
-            this.transporter = nodemailer.createTransporter({
-              host: 'smtp.ethereal.email',
-              port: 587,
-              secure: false,
-              auth: {
-                user: testAccount.user,
-                pass: testAccount.pass
-              }
-            });
-            console.log('📧 Using Ethereal test email service');
-            console.log('📧 Test email account:', testAccount.user);
-          }
-        } catch (error) {
-          console.warn('⚠️ Email service not configured, emails will be logged only');
-          this.transporter = null;
-        }
-      }
+      // Create transporter based on configuration
+      this.transporter = await this.createTransporter();
 
       // Verify connection
       if (this.transporter) {
-        await this.transporter.verify();
-        this.isConfigured = true;
-        console.log('✅ Email service configured successfully');
+        await this.verifyConnection();
+        this.initialized = true;
+        console.log('✅ Email service initialized successfully');
       }
     } catch (error) {
-      console.warn('⚠️ Email service configuration failed:', error.message);
-      this.isConfigured = false;
+      console.log('⚠️ Email service not configured:', error.message);
+      this.initialized = false;
     }
   }
 
-  // Email templates
-  getEmailTemplate(type, data) {
+  async createTransporter() {
+    const config = {
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    };
+
+    // Handle different email providers
+    if (process.env.SMTP_HOST === 'smtp.gmail.com') {
+      // Gmail specific configuration
+      config.service = 'gmail';
+      config.auth = {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS, // Use App Password for Gmail
+      };
+    } else if (process.env.SMTP_HOST === 'smtp.mailgun.org') {
+      // Mailgun configuration
+      config.host = 'smtp.mailgun.org';
+      config.port = 587;
+      config.secure = false;
+    } else if (process.env.SMTP_HOST === 'smtp.sendgrid.net') {
+      // SendGrid configuration
+      config.host = 'smtp.sendgrid.net';
+      config.port = 587;
+      config.secure = false;
+      config.auth = {
+        user: 'apikey',
+        pass: process.env.SMTP_PASS, // SendGrid API key
+      };
+    }
+
+    return nodemailer.createTransporter(config);
+  }
+
+  async verifyConnection() {
+    if (!this.transporter) {
+      throw new Error('Transporter not initialized');
+    }
+
+    return new Promise((resolve, reject) => {
+      this.transporter.verify((error, success) => {
+        if (error) {
+          console.log('❌ SMTP connection failed:', error.message);
+          reject(error);
+        } else {
+          console.log('✅ SMTP connection verified successfully');
+          resolve(success);
+        }
+      });
+    });
+  }
+
+  // Get email template based on language and type
+  getEmailTemplate(type, language = 'en', data = {}) {
     const templates = {
-      welcome: {
-        subject: {
-          ar: 'مرحباً بك في دروغيري جمال',
-          fr: 'Bienvenue chez Droguerie Jamal',
-          en: 'Welcome to Droguerie Jamal'
-        },
-        html: `
-          <div dir="${data.language === 'ar' ? 'rtl' : 'ltr'}" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #059669; color: white; padding: 20px; text-align: center;">
-              <h1 style="margin: 0;">${data.language === 'ar' ? 'دروغيري جمال' : 'Droguerie Jamal'}</h1>
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">
-                ${data.language === 'ar' ? 'دروغيريتك المحلية الموثوقة' :
-                  data.language === 'fr' ? 'Votre droguerie locale de confiance' :
-                  'Your trusted neighborhood droguerie'}
-              </p>
-            </div>
-            <div style="padding: 20px;">
-              <h2 style="color: #059669;">
-                ${data.language === 'ar' ? `مرحباً ${data.name}!` :
-                  data.language === 'fr' ? `Bonjour ${data.name}!` :
-                  `Hello ${data.name}!`}
-              </h2>
-              <p>
-                ${data.language === 'ar' ? 'شكراً لتسجيلك في دروغيري جمال. نحن متحمسون لخدمتك!' :
-                  data.language === 'fr' ? 'Merci de vous être inscrit chez Droguerie Jamal. Nous sommes ravis de vous servir!' :
-                  'Thank you for registering with Droguerie Jamal. We\'re excited to serve you!'}
-              </p>
-              <div style="background: #f0f9f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #059669; margin-top: 0;">
-                  ${data.language === 'ar' ? 'ما يمكنك فعله الآن:' :
-                    data.language === 'fr' ? 'Ce que vous pouvez faire maintenant:' :
-                    'What you can do now:'}
-                </h3>
-                <ul style="margin: 0; padding-${data.language === 'ar' ? 'right' : 'left'}: 20px;">
-                  <li>${data.language === 'ar' ? 'تصفح منتجاتنا المتنوعة' :
-                       data.language === 'fr' ? 'Parcourir nos produits variés' :
-                       'Browse our diverse products'}</li>
-                  <li>${data.language === 'ar' ? 'إضافة العناصر إلى قائمة الرغبات' :
-                       data.language === 'fr' ? 'Ajouter des articles à votre liste de souhaits' :
-                       'Add items to your wishlist'}</li>
-                  <li>${data.language === 'ar' ? 'تتبع طلباتك' :
-                       data.language === 'fr' ? 'Suivre vos commandes' :
-                       'Track your orders'}</li>
-                </ul>
-              </div>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${data.loginUrl}" style="background: #059669; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                  ${data.language === 'ar' ? 'تسجيل الدخول الآن' :
-                    data.language === 'fr' ? 'Se connecter maintenant' :
-                    'Login Now'}
-                </a>
-              </div>
-            </div>
-            <div style="background: #f8f9fa; padding: 15px; text-align: center; font-size: 14px; color: #666;">
-              <p style="margin: 0;">
-                ${data.language === 'ar' ? 'شكراً لاختيارك دروغيري جمال' :
-                  data.language === 'fr' ? 'Merci d\'avoir choisi Droguerie Jamal' :
-                  'Thank you for choosing Droguerie Jamal'}
-              </p>
-              <p style="margin: 5px 0 0 0;">
-                📞 ${process.env.BUSINESS_PHONE || '+212 522 123 456'} |
-                📧 ${process.env.BUSINESS_EMAIL || 'contact@drogueriejamal.ma'}
-              </p>
-            </div>
-          </div>
-        `
-      },
-
+      // Order Confirmation Templates
       orderConfirmation: {
-        subject: {
-          ar: `تأكيد الطلب #${data.orderNumber}`,
-          fr: `Confirmation de commande #${data.orderNumber}`,
-          en: `Order Confirmation #${data.orderNumber}`
+        ar: {
+          subject: `تأكيد الطلب #${data.orderNumber} - دروغيري جمال`,
+          html: this.getOrderConfirmationTemplateAR(data),
+          text: `شكراً لك على طلبك #${data.orderNumber}. سنقوم بمعالجة طلبك قريباً.`
         },
-        html: `
-          <div dir="${data.language === 'ar' ? 'rtl' : 'ltr'}" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #059669; color: white; padding: 20px; text-align: center;">
-              <h1 style="margin: 0;">${data.language === 'ar' ? 'تأكيد الطلب' : data.language === 'fr' ? 'Confirmation de commande' : 'Order Confirmation'}</h1>
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">
-                ${data.language === 'ar' ? `رقم الطلب: #${data.orderNumber}` :
-                  data.language === 'fr' ? `Numéro de commande: #${data.orderNumber}` :
-                  `Order Number: #${data.orderNumber}`}
-              </p>
-            </div>
-            <div style="padding: 20px;">
-              <h2 style="color: #059669;">
-                ${data.language === 'ar' ? `مرحباً ${data.customerName}` :
-                  data.language === 'fr' ? `Bonjour ${data.customerName}` :
-                  `Hello ${data.customerName}`}
-              </h2>
-              <p>
-                ${data.language === 'ar' ? 'شكراً لطلبك من دروغيري جمال. تم استلام طلبك وسيتم تجهيزه قريباً.' :
-                  data.language === 'fr' ? 'Merci pour votre commande chez Droguerie Jamal. Votre commande a été reçue et sera bientôt préparée.' :
-                  'Thank you for your order from Droguerie Jamal. Your order has been received and will be processed soon.'}
-              </p>
-
-              <div style="background: #f0f9f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #059669; margin-top: 0;">
-                  ${data.language === 'ar' ? 'تفاصيل الطلب:' :
-                    data.language === 'fr' ? 'Détails de la commande:' :
-                    'Order Details:'}
-                </h3>
-                <p><strong>${data.language === 'ar' ? 'المجموع:' : data.language === 'fr' ? 'Total:' : 'Total:'}</strong> ${data.total} ${data.language === 'ar' ? 'درهم' : 'MAD'}</p>
-                <p><strong>${data.language === 'ar' ? 'طريقة الدفع:' : data.language === 'fr' ? 'Méthode de paiement:' : 'Payment Method:'}</strong> ${data.paymentMethod}</p>
-                <p><strong>${data.language === 'ar' ? 'التوصيل المتوقع:' : data.language === 'fr' ? 'Livraison prévue:' : 'Expected Delivery:'}</strong> ${data.estimatedDelivery}</p>
-              </div>
-
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${data.trackingUrl}" style="background: #059669; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                  ${data.language === 'ar' ? 'تتبع الطلب' :
-                    data.language === 'fr' ? 'Suivre la commande' :
-                    'Track Order'}
-                </a>
-              </div>
-            </div>
-            <div style="background: #f8f9fa; padding: 15px; text-align: center; font-size: 14px; color: #666;">
-              <p style="margin: 0;">
-                ${data.language === 'ar' ? 'شكراً لاختيارك دروغيري جمال' :
-                  data.language === 'fr' ? 'Merci d\'avoir choisi Droguerie Jamal' :
-                  'Thank you for choosing Droguerie Jamal'}
-              </p>
-            </div>
-          </div>
-        `
+        fr: {
+          subject: `Confirmation de commande #${data.orderNumber} - Droguerie Jamal`,
+          html: this.getOrderConfirmationTemplateFR(data),
+          text: `Merci pour votre commande #${data.orderNumber}. Nous traiterons votre commande bientôt.`
+        },
+        en: {
+          subject: `Order Confirmation #${data.orderNumber} - Droguerie Jamal`,
+          html: this.getOrderConfirmationTemplateEN(data),
+          text: `Thank you for your order #${data.orderNumber}. We will process your order soon.`
+        }
       },
 
-      passwordReset: {
-        subject: {
-          ar: 'إعادة تعيين كلمة المرور - دروغيري جمال',
-          fr: 'Réinitialisation du mot de passe - Droguerie Jamal',
-          en: 'Password Reset - Droguerie Jamal'
+      // Welcome Email Templates
+      welcome: {
+        ar: {
+          subject: 'مرحباً بك في دروغيري جمال - متجر المنزل الموثوق',
+          html: this.getWelcomeTemplateAR(data),
+          text: `مرحباً ${data.name}، أهلاً بك في دروغيري جمال!`
         },
-        html: `
-          <div dir="${data.language === 'ar' ? 'rtl' : 'ltr'}" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: #059669; color: white; padding: 20px; text-align: center;">
-              <h1 style="margin: 0;">${data.language === 'ar' ? 'إعادة تعيين كلمة المرور' : data.language === 'fr' ? 'Réinitialisation du mot de passe' : 'Password Reset'}</h1>
-            </div>
-            <div style="padding: 20px;">
-              <p>
-                ${data.language === 'ar' ? 'تم طلب إعادة تعيين كلمة المرور لحسابك. انقر على الرابط أدناه لإعادة تعيين كلمة المرور:' :
-                  data.language === 'fr' ? 'Une réinitialisation du mot de passe a été demandée pour votre compte. Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe:' :
-                  'A password reset was requested for your account. Click the link below to reset your password:'}
-              </p>
+        fr: {
+          subject: 'Bienvenue chez Droguerie Jamal - Votre droguerie de confiance',
+          html: this.getWelcomeTemplateFR(data),
+          text: `Bonjour ${data.name}, bienvenue chez Droguerie Jamal!`
+        },
+        en: {
+          subject: 'Welcome to Droguerie Jamal - Your Trusted Home Store',
+          html: this.getWelcomeTemplateEN(data),
+          text: `Hello ${data.name}, welcome to Droguerie Jamal!`
+        }
+      },
 
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${data.resetUrl}" style="background: #059669; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                  ${data.language === 'ar' ? 'إعادة تعيين كلمة المرور' :
-                    data.language === 'fr' ? 'Réinitialiser le mot de passe' :
-                    'Reset Password'}
-                </a>
-              </div>
-
-              <p style="font-size: 14px; color: #666;">
-                ${data.language === 'ar' ? 'هذا الرابط صالح لمدة 24 ساعة فقط. إذا لم تطلب إعادة تعيين كلمة المرور، يمكنك تجاهل هذا البريد الإلكتروني.' :
-                  data.language === 'fr' ? 'Ce lien est valide pendant 24 heures seulement. Si vous n\'avez pas demandé de réinitialisation de mot de passe, vous pouvez ignorer cet email.' :
-                  'This link is valid for 24 hours only. If you didn\'t request a password reset, you can ignore this email.'}
-              </p>
-            </div>
-          </div>
-        `
+      // Password Reset Templates
+      passwordReset: {
+        ar: {
+          subject: 'إعادة تعيين كلمة المرور - دروغيري جمال',
+          html: this.getPasswordResetTemplateAR(data),
+          text: `استخدم هذا الرمز لإعادة تعيين كلمة المرور: ${data.resetCode}`
+        },
+        fr: {
+          subject: 'Réinitialisation du mot de passe - Droguerie Jamal',
+          html: this.getPasswordResetTemplateFR(data),
+          text: `Utilisez ce code pour réinitialiser votre mot de passe: ${data.resetCode}`
+        },
+        en: {
+          subject: 'Password Reset - Droguerie Jamal',
+          html: this.getPasswordResetTemplateEN(data),
+          text: `Use this code to reset your password: ${data.resetCode}`
+        }
       }
     };
 
-    return templates[type] || null;
+    return templates[type]?.[language] || templates[type]?.en;
   }
 
-  async sendEmail(type, to, data) {
+  // Order Confirmation Template - Arabic
+  getOrderConfirmationTemplateAR(data) {
+    return `
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>تأكيد الطلب</title>
+        <style>
+            body { font-family: 'Cairo', Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #0f766e, #059669); color: white; padding: 30px; text-align: center; }
+            .content { padding: 30px; }
+            .order-summary { background: #f0fdfa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .footer { background: #f3f4f6; padding: 20px; text-align: center; font-size: 14px; color: #6b7280; }
+            .btn { display: inline-block; background: #0f766e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🛍️ دروغيري جمال</h1>
+                <h2>تأكيد طلبك #${data.orderNumber}</h2>
+            </div>
+            <div class="content">
+                <p>عزيزي/عزيزتي ${data.customerName},</p>
+                <p>شكراً لك على ثقتك في دروغيري جمال. تم استلام طلبك بنجاح وسنقوم بمعالجته قريباً.</p>
+
+                <div class="order-summary">
+                    <h3>ملخص الطلب:</h3>
+                    <p><strong>رقم الطلب:</strong> #${data.orderNumber}</p>
+                    <p><strong>تاريخ الطلب:</strong> ${new Date().toLocaleDateString('ar-MA')}</p>
+                    <p><strong>المبلغ الإجمالي:</strong> ${data.totalAmount} درهم</p>
+                    <p><strong>طريقة الدفع:</strong> ${data.paymentMethod}</p>
+                    <p><strong>عنوان التوصيل:</strong> ${data.shippingAddress}</p>
+                </div>
+
+                <p>سيتم التواصل معك قريباً لتأكيد موعد التوصيل.</p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.BUSINESS_WEBSITE}/orders/${data.orderNumber}" class="btn">تتبع طلبك</a>
+                </div>
+
+                <p>إذا كان لديك أي استفسار، لا تتردد في التواصل معنا:</p>
+                <p>📞 ${process.env.BUSINESS_PHONE}</p>
+                <p>📧 ${process.env.ORDERS_EMAIL}</p>
+                <p>💬 واتساب: ${process.env.WHATSAPP_BUSINESS_PHONE}</p>
+            </div>
+            <div class="footer">
+                <p>دروغيري جمال - متجر المنزل الموثوق</p>
+                <p>${process.env.BUSINESS_ADDRESS_AR}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+  }
+
+  // Order Confirmation Template - French
+  getOrderConfirmationTemplateFR(data) {
+    return `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Confirmation de commande</title>
+        <style>
+            body { font-family: 'Inter', Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #0f766e, #059669); color: white; padding: 30px; text-align: center; }
+            .content { padding: 30px; }
+            .order-summary { background: #f0fdfa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .footer { background: #f3f4f6; padding: 20px; text-align: center; font-size: 14px; color: #6b7280; }
+            .btn { display: inline-block; background: #0f766e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🛍️ Droguerie Jamal</h1>
+                <h2>Confirmation de votre commande #${data.orderNumber}</h2>
+            </div>
+            <div class="content">
+                <p>Cher(e) ${data.customerName},</p>
+                <p>Merci de votre confiance en Droguerie Jamal. Votre commande a été reçue avec succès et sera traitée prochainement.</p>
+
+                <div class="order-summary">
+                    <h3>Résumé de la commande:</h3>
+                    <p><strong>Numéro de commande:</strong> #${data.orderNumber}</p>
+                    <p><strong>Date de commande:</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
+                    <p><strong>Montant total:</strong> ${data.totalAmount} DH</p>
+                    <p><strong>Mode de paiement:</strong> ${data.paymentMethod}</p>
+                    <p><strong>Adresse de livraison:</strong> ${data.shippingAddress}</p>
+                </div>
+
+                <p>Nous vous contacterons bientôt pour confirmer l'heure de livraison.</p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.BUSINESS_WEBSITE}/orders/${data.orderNumber}" class="btn">Suivre votre commande</a>
+                </div>
+
+                <p>Si vous avez des questions, n'hésitez pas à nous contacter:</p>
+                <p>📞 ${process.env.BUSINESS_PHONE}</p>
+                <p>📧 ${process.env.ORDERS_EMAIL}</p>
+                <p>💬 WhatsApp: ${process.env.WHATSAPP_BUSINESS_PHONE}</p>
+            </div>
+            <div class="footer">
+                <p>Droguerie Jamal - Votre droguerie de confiance</p>
+                <p>${process.env.BUSINESS_ADDRESS}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+  }
+
+  // Order Confirmation Template - English
+  getOrderConfirmationTemplateEN(data) {
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Confirmation</title>
+        <style>
+            body { font-family: 'Inter', Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #0f766e, #059669); color: white; padding: 30px; text-align: center; }
+            .content { padding: 30px; }
+            .order-summary { background: #f0fdfa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .footer { background: #f3f4f6; padding: 20px; text-align: center; font-size: 14px; color: #6b7280; }
+            .btn { display: inline-block; background: #0f766e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🛍️ Droguerie Jamal</h1>
+                <h2>Order Confirmation #${data.orderNumber}</h2>
+            </div>
+            <div class="content">
+                <p>Dear ${data.customerName},</p>
+                <p>Thank you for your trust in Droguerie Jamal. Your order has been received successfully and will be processed soon.</p>
+
+                <div class="order-summary">
+                    <h3>Order Summary:</h3>
+                    <p><strong>Order Number:</strong> #${data.orderNumber}</p>
+                    <p><strong>Order Date:</strong> ${new Date().toLocaleDateString('en-US')}</p>
+                    <p><strong>Total Amount:</strong> ${data.totalAmount} MAD</p>
+                    <p><strong>Payment Method:</strong> ${data.paymentMethod}</p>
+                    <p><strong>Shipping Address:</strong> ${data.shippingAddress}</p>
+                </div>
+
+                <p>We will contact you soon to confirm the delivery time.</p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.BUSINESS_WEBSITE}/orders/${data.orderNumber}" class="btn">Track Your Order</a>
+                </div>
+
+                <p>If you have any questions, please don't hesitate to contact us:</p>
+                <p>📞 ${process.env.BUSINESS_PHONE}</p>
+                <p>📧 ${process.env.ORDERS_EMAIL}</p>
+                <p>💬 WhatsApp: ${process.env.WHATSAPP_BUSINESS_PHONE}</p>
+            </div>
+            <div class="footer">
+                <p>Droguerie Jamal - Your Trusted Home Store</p>
+                <p>${process.env.BUSINESS_ADDRESS}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+  }
+
+  // Welcome Template - Arabic
+  getWelcomeTemplateAR(data) {
+    return `
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { font-family: 'Cairo', Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #0f766e, #c2410c); color: white; padding: 30px; text-align: center; }
+            .content { padding: 30px; }
+            .features { background: #f0fdfa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .footer { background: #f3f4f6; padding: 20px; text-align: center; font-size: 14px; color: #6b7280; }
+            .btn { display: inline-block; background: #c2410c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎉 أهلاً وسهلاً</h1>
+                <h2>مرحباً بك في دروغيري جمال</h2>
+            </div>
+            <div class="content">
+                <p>عزيزي/عزيزتي ${data.name},</p>
+                <p>أهلاً وسهلاً بك في عائلة دروغيري جمال! نحن سعداء لانضمامك إلينا.</p>
+
+                <div class="features">
+                    <h3>ما يميزنا:</h3>
+                    <ul>
+                        <li>🚚 توصيل سريع في جميع أنحاء المغرب</li>
+                        <li>💳 طرق دفع متنوعة وآمنة</li>
+                        <li>🛡️ ضمان الجودة على جميع المنتجات</li>
+                        <li>📞 خدمة عملاء متاحة 24/7</li>
+                        <li>💰 أسعار تنافسية وعروض حصرية</li>
+                    </ul>
+                </div>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${process.env.BUSINESS_WEBSITE}" class="btn">ابدأ التسوق الآن</a>
+                </div>
+
+                <p>تابعنا على وسائل التواصل الاجتماعي للحصول على آخر العروض والمنتجات الجديدة.</p>
+            </div>
+            <div class="footer">
+                <p>دروغيري جمال - متجر المنزل الموثوق منذ 2009</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+  }
+
+  // Password Reset Templates (simplified for brevity)
+  getPasswordResetTemplateAR(data) {
+    return `
+    <div style="font-family: Cairo, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>إعادة تعيين كلمة المرور</h2>
+        <p>مرحباً ${data.name},</p>
+        <p>استخدم الرمز التالي لإعادة تعيين كلمة المرور:</p>
+        <div style="background: #f0fdfa; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; border-radius: 8px;">
+            ${data.resetCode}
+        </div>
+        <p>هذا الرمز صالح لمدة ساعة واحدة فقط.</p>
+    </div>
+    `;
+  }
+
+  getPasswordResetTemplateFR(data) {
+    return `
+    <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>Réinitialisation du mot de passe</h2>
+        <p>Bonjour ${data.name},</p>
+        <p>Utilisez le code suivant pour réinitialiser votre mot de passe:</p>
+        <div style="background: #f0fdfa; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; border-radius: 8px;">
+            ${data.resetCode}
+        </div>
+        <p>Ce code est valide pendant une heure seulement.</p>
+    </div>
+    `;
+  }
+
+  getPasswordResetTemplateEN(data) {
+    return `
+    <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>Password Reset</h2>
+        <p>Hello ${data.name},</p>
+        <p>Use the following code to reset your password:</p>
+        <div style="background: #f0fdfa; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; border-radius: 8px;">
+            ${data.resetCode}
+        </div>
+        <p>This code is valid for one hour only.</p>
+    </div>
+    `;
+  }
+
+  // Welcome templates for other languages (simplified)
+  getWelcomeTemplateFR(data) {
+    return `<div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1>🎉 Bienvenue chez Droguerie Jamal!</h1>
+        <p>Bonjour ${data.name}, merci de nous avoir rejoint!</p>
+    </div>`;
+  }
+
+  getWelcomeTemplateEN(data) {
+    return `<div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1>🎉 Welcome to Droguerie Jamal!</h1>
+        <p>Hello ${data.name}, thank you for joining us!</p>
+    </div>`;
+  }
+
+  // Main send email function
+  async sendEmail({ to, type, language = 'en', data = {} }) {
+    if (!this.initialized) {
+      console.log('⚠️ Email service not initialized, logging email instead:');
+      console.log(`To: ${to}, Type: ${type}, Language: ${language}`);
+      return { success: false, message: 'Email service not configured' };
+    }
+
     try {
-      if (!this.isConfigured) {
-        console.log(`📧 [EMAIL SIMULATION] ${type} email to ${to}:`, data);
-        return { success: true, messageId: 'simulated', preview: null };
-      }
+      const template = this.getEmailTemplate(type, language, data);
 
-      const template = this.getEmailTemplate(type, data);
       if (!template) {
-        throw new Error(`Email template '${type}' not found`);
+        throw new Error(`Template not found for type: ${type}, language: ${language}`);
       }
 
-      const language = data.language || 'en';
       const mailOptions = {
-        from: process.env.SMTP_FROM || '"Droguerie Jamal" <contact@drogueriejamal.ma>',
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: to,
-        subject: template.subject[language] || template.subject.en,
-        html: template.html
+        subject: template.subject,
+        text: template.text,
+        html: template.html,
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ Email sent successfully:', result.messageId);
 
-      // Log preview URL for Ethereal
-      let previewUrl = null;
-      if (process.env.NODE_ENV !== 'production') {
-        previewUrl = nodemailer.getTestMessageUrl(info);
-        if (previewUrl) {
-          console.log(`📧 Email preview: ${previewUrl}`);
-        }
-      }
-
-      console.log(`✅ Email sent successfully: ${info.messageId}`);
-      return { success: true, messageId: info.messageId, preview: previewUrl };
-
+      return {
+        success: true,
+        messageId: result.messageId,
+        message: 'Email sent successfully'
+      };
     } catch (error) {
-      console.error(`❌ Failed to send ${type} email to ${to}:`, error.message);
-      return { success: false, error: error.message };
+      console.error('❌ Failed to send email:', error.message);
+
+      return {
+        success: false,
+        error: error.message,
+        message: 'Failed to send email'
+      };
     }
   }
 
-  // Convenience methods
-  async sendWelcomeEmail(userEmail, userData) {
-    return this.sendEmail('welcome', userEmail, {
-      name: userData.name,
-      language: userData.language || 'en',
-      loginUrl: `${process.env.API_BASE_URL || 'http://localhost:5173'}/login`
+  // Convenience methods for specific email types
+  async sendOrderConfirmation(customerEmail, orderData, language = 'en') {
+    return this.sendEmail({
+      to: customerEmail,
+      type: 'orderConfirmation',
+      language,
+      data: orderData
     });
   }
 
-  async sendOrderConfirmation(userEmail, orderData) {
-    return this.sendEmail('orderConfirmation', userEmail, {
-      customerName: orderData.customerName,
-      orderNumber: orderData.orderNumber,
-      total: orderData.total,
-      paymentMethod: orderData.paymentMethod,
-      estimatedDelivery: orderData.estimatedDelivery,
-      language: orderData.language || 'en',
-      trackingUrl: `${process.env.API_BASE_URL || 'http://localhost:5173'}/order-tracking/${orderData.orderNumber}`
+  async sendWelcomeEmail(customerEmail, userData, language = 'en') {
+    return this.sendEmail({
+      to: customerEmail,
+      type: 'welcome',
+      language,
+      data: userData
     });
   }
 
-  async sendPasswordReset(userEmail, resetData) {
-    return this.sendEmail('passwordReset', userEmail, {
-      language: resetData.language || 'en',
-      resetUrl: resetData.resetUrl
-    });
-  }
-
-  // Test email functionality
-  async sendTestEmail(to) {
-    return this.sendEmail('welcome', to, {
-      name: 'Test User',
-      language: 'en',
-      loginUrl: 'http://localhost:5173/login'
+  async sendPasswordReset(customerEmail, resetData, language = 'en') {
+    return this.sendEmail({
+      to: customerEmail,
+      type: 'passwordReset',
+      language,
+      data: resetData
     });
   }
 }
 
-module.exports = new EmailService();
+// Export singleton instance
+const emailService = new EmailService();
+module.exports = emailService;

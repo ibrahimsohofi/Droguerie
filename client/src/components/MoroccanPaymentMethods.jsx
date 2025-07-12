@@ -1,329 +1,363 @@
-import React, { useState, useEffect } from 'react';
-import { CreditCard, Truck, Phone, Building2, Banknote, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
+import { CreditCard, Banknote, Building2, Smartphone, Truck, DollarSign, Check, AlertCircle, Info } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 const MoroccanPaymentMethods = ({
   selectedMethod,
-  onMethodChange,
-  orderAmount = 0,
-  shippingCity = '',
-  onDeliveryFeeChange
+  onMethodSelect,
+  orderTotal,
+  shippingAddress,
+  className = ""
 }) => {
-  const { language, isRTL, t } = useLanguage();
-  const [deliveryFee, setDeliveryFee] = useState(0);
+  const { language, isRTL } = useLanguage();
+  const [showBankDetails, setShowBankDetails] = useState(false);
 
-  // Moroccan city delivery zones with fees
-  const deliveryZones = {
-    'Casablanca': { fee: 25, zone: 'metro' },
-    'الدار البيضاء': { fee: 25, zone: 'metro' },
-    'Rabat': { fee: 30, zone: 'metro' },
-    'الرباط': { fee: 30, zone: 'metro' },
-    'Salé': { fee: 30, zone: 'metro' },
-    'سلا': { fee: 30, zone: 'metro' },
-    'Fès': { fee: 35, zone: 'major' },
-    'فاس': { fee: 35, zone: 'major' },
-    'Marrakech': { fee: 35, zone: 'major' },
-    'مراكش': { fee: 35, zone: 'major' },
-    'Agadir': { fee: 40, zone: 'major' },
-    'أكادير': { fee: 40, zone: 'major' },
-    'Tanger': { fee: 40, zone: 'major' },
-    'طنجة': { fee: 40, zone: 'major' },
-    'Meknès': { fee: 35, zone: 'major' },
-    'مكناس': { fee: 35, zone: 'major' },
-    'Oujda': { fee: 45, zone: 'regional' },
-    'وجدة': { fee: 45, zone: 'regional' },
-    'Kenitra': { fee: 35, zone: 'major' },
-    'القنيطرة': { fee: 35, zone: 'major' },
-    'Tétouan': { fee: 40, zone: 'major' },
-    'تطوان': { fee: 40, zone: 'major' }
+  // Get text based on language
+  const getText = () => {
+    return {
+      title: language === 'ar' ? 'طرق الدفع المتاحة' : language === 'fr' ? 'Méthodes de paiement disponibles' : 'Available Payment Methods',
+
+      // Cash on Delivery
+      cod: language === 'ar' ? 'الدفع عند الاستلام' : language === 'fr' ? 'Paiement à la livraison' : 'Cash on Delivery',
+      codDesc: language === 'ar' ? 'ادفع نقداً عند وصول طلبك' : language === 'fr' ? 'Payez en espèces à la réception' : 'Pay in cash when your order arrives',
+      codFee: language === 'ar' ? 'رسوم التوصيل' : language === 'fr' ? 'Frais de livraison' : 'Delivery fee',
+
+      // Bank Transfer
+      bankTransfer: language === 'ar' ? 'تحويل بنكي' : language === 'fr' ? 'Virement bancaire' : 'Bank Transfer',
+      bankTransferDesc: language === 'ar' ? 'حوّل المبلغ إلى حسابنا البنكي' : language === 'fr' ? 'Transférez le montant sur notre compte' : 'Transfer the amount to our bank account',
+      showBankDetails: language === 'ar' ? 'عرض التفاصيل البنكية' : language === 'fr' ? 'Afficher les détails bancaires' : 'Show bank details',
+      hideBankDetails: language === 'ar' ? 'إخفاء التفاصيل' : language === 'fr' ? 'Masquer les détails' : 'Hide details',
+
+      // Local Cards (CMI)
+      localCards: language === 'ar' ? 'البطاقات المغربية' : language === 'fr' ? 'Cartes marocaines' : 'Moroccan Cards',
+      localCardsDesc: language === 'ar' ? 'البطاقات البنكية المغربية المحلية' : language === 'fr' ? 'Cartes bancaires marocaines locales' : 'Local Moroccan bank cards',
+
+      // International Cards
+      intlCards: language === 'ar' ? 'البطاقات الدولية' : language === 'fr' ? 'Cartes internationales' : 'International Cards',
+      intlCardsDesc: language === 'ar' ? 'فيزا، ماستركارد، أمريكان إكسبرس' : language === 'fr' ? 'Visa, Mastercard, American Express' : 'Visa, Mastercard, American Express',
+
+      // PayPal
+      paypalDesc: language === 'ar' ? 'ادفع بأمان باستخدام PayPal' : language === 'fr' ? 'Payez en sécurité avec PayPal' : 'Pay securely with PayPal',
+
+      // Mobile Payment
+      mobilePayment: language === 'ar' ? 'الدفع المحمول' : language === 'fr' ? 'Paiement mobile' : 'Mobile Payment',
+      mobilePaymentDesc: language === 'ar' ? 'ادفع عبر هاتفك المحمول' : language === 'fr' ? 'Payez via votre mobile' : 'Pay via your mobile phone',
+
+      // Bank Details
+      bankName: language === 'ar' ? 'اسم البنك' : language === 'fr' ? 'Nom de la banque' : 'Bank Name',
+      accountNumber: language === 'ar' ? 'رقم الحساب' : language === 'fr' ? 'Numéro de compte' : 'Account Number',
+      iban: language === 'ar' ? 'الآيبان' : language === 'fr' ? 'IBAN' : 'IBAN',
+      swift: language === 'ar' ? 'سويفت' : language === 'fr' ? 'SWIFT' : 'SWIFT',
+      accountHolder: language === 'ar' ? 'صاحب الحساب' : language === 'fr' ? 'Titulaire du compte' : 'Account Holder',
+
+      // Info Messages
+      freeShipping: language === 'ar' ? 'شحن مجاني' : language === 'fr' ? 'Livraison gratuite' : 'Free shipping',
+      securePayment: language === 'ar' ? 'دفع آمن' : language === 'fr' ? 'Paiement sécurisé' : 'Secure payment',
+      instantProcessing: language === 'ar' ? 'معالجة فورية' : language === 'fr' ? 'Traitement instantané' : 'Instant processing',
+      verificationRequired: language === 'ar' ? 'التحقق مطلوب' : language === 'fr' ? 'Vérification requise' : 'Verification required',
+    };
   };
 
-  // Calculate delivery fee based on city and payment method
-  useEffect(() => {
-    let fee = 0;
+  const text = getText();
 
-    if (selectedMethod === 'cod' && shippingCity) {
-      const cityInfo = deliveryZones[shippingCity] || { fee: 50 }; // Default for other cities
-      fee = cityInfo.fee;
+  // Check if Cash on Delivery is available for the shipping address
+  const isCODAvailable = () => {
+    const availableCities = ['Casablanca', 'Rabat', 'Marrakech', 'Fes', 'Tangier', 'Agadir', 'Meknes', 'Oujda', 'Kenitra', 'Tetouan'];
+    return shippingAddress && availableCities.some(city =>
+      shippingAddress.city?.toLowerCase().includes(city.toLowerCase())
+    );
+  };
 
-      // Free delivery for orders over 300 MAD
-      if (orderAmount >= 300) {
-        fee = 0;
-      }
-    }
-
-    setDeliveryFee(fee);
-    if (onDeliveryFeeChange) {
-      onDeliveryFeeChange(fee);
-    }
-  }, [selectedMethod, shippingCity, orderAmount, onDeliveryFeeChange]);
+  // Check if order qualifies for free shipping
+  const isFreeShipping = orderTotal >= 300;
+  const deliveryFee = isFreeShipping ? 0 : 25;
 
   const paymentMethods = [
+    // Cash on Delivery
     {
       id: 'cod',
-      nameAr: 'الدفع عند التوصيل',
-      nameFr: 'Paiement à la livraison',
-      nameEn: 'Cash on Delivery',
-      icon: Truck,
-      description: {
-        ar: 'ادفع نقداً عند استلام طلبك. الطريقة الأكثر أماناً وشعبية في المغرب',
-        fr: 'Payez en espèces à la réception de votre commande. Méthode la plus sûre et populaire au Maroc',
-        en: 'Pay in cash when you receive your order. Most safe and popular method in Morocco'
-      },
-      features: {
-        ar: ['توصيل مجاني للطلبات أكثر من 300 درهم', 'فحص المنتج قبل الدفع', 'لا توجد رسوم إضافية'],
-        fr: ['Livraison gratuite pour les commandes de plus de 300 DH', 'Inspection du produit avant paiement', 'Aucun frais supplémentaire'],
-        en: ['Free delivery for orders over 300 MAD', 'Product inspection before payment', 'No additional fees']
-      },
-      popular: true
+      name: text.cod,
+      description: text.codDesc,
+      icon: <Truck className="w-6 h-6" />,
+      available: isCODAvailable(),
+      fee: deliveryFee,
+      badges: [
+        { text: text.verificationRequired, color: 'amber' },
+        deliveryFee === 0 ? { text: text.freeShipping, color: 'green' } : null
+      ].filter(Boolean),
+      bgColor: 'bg-gradient-to-br from-amber-50 to-orange-50',
+      borderColor: 'border-amber-200',
+      iconColor: 'text-amber-600'
     },
+
+    // Moroccan Local Cards (CMI)
     {
-      id: 'cih_bank',
-      nameAr: 'البنك التجاري وفا المغرب - CIH',
-      nameFr: 'CIH Bank Maroc',
-      nameEn: 'CIH Bank Morocco',
-      icon: Building2,
-      description: {
-        ar: 'الدفع الآمن عبر البنك التجاري وفا المغرب. دفع فوري وآمن',
-        fr: 'Paiement sécurisé via CIH Bank Maroc. Paiement instantané et sécurisé',
-        en: 'Secure payment via CIH Bank Morocco. Instant and secure payment'
-      },
-      features: {
-        ar: ['دفع فوري', 'حماية مصرفية كاملة', 'بدون رسوم إضافية'],
-        fr: ['Paiement instantané', 'Protection bancaire complète', 'Sans frais supplémentaires'],
-        en: ['Instant payment', 'Full banking protection', 'No additional fees']
-      }
+      id: 'cmi',
+      name: text.localCards,
+      description: text.localCardsDesc,
+      icon: <CreditCard className="w-6 h-6" />,
+      available: true,
+      fee: 0,
+      badges: [
+        { text: text.securePayment, color: 'green' },
+        { text: text.instantProcessing, color: 'blue' }
+      ],
+      bgColor: 'bg-gradient-to-br from-green-50 to-emerald-50',
+      borderColor: 'border-green-200',
+      iconColor: 'text-green-600',
+      logos: ['🇲🇦']
     },
+
+    // International Cards (Stripe)
     {
-      id: 'bmce_bank',
-      nameAr: 'بنك المغرب الخارجي - BMCE',
-      nameFr: 'BMCE Bank of Africa',
-      nameEn: 'BMCE Bank of Africa',
-      icon: Building2,
-      description: {
-        ar: 'الدفع عبر بنك المغرب الخارجي. حلول دفع متطورة وآمنة',
-        fr: 'Paiement via BMCE Bank of Africa. Solutions de paiement avancées et sécurisées',
-        en: 'Payment via BMCE Bank of Africa. Advanced and secure payment solutions'
-      },
-      features: {
-        ar: ['تقنية مصرفية متقدمة', 'حماية من الاحتيال', 'معالجة سريعة'],
-        fr: ['Technologie bancaire avancée', 'Protection contre la fraude', 'Traitement rapide'],
-        en: ['Advanced banking technology', 'Fraud protection', 'Fast processing']
-      }
+      id: 'stripe',
+      name: text.intlCards,
+      description: text.intlCardsDesc,
+      icon: <CreditCard className="w-6 h-6" />,
+      available: true,
+      fee: 0,
+      badges: [
+        { text: text.securePayment, color: 'blue' },
+        { text: text.instantProcessing, color: 'green' }
+      ],
+      bgColor: 'bg-gradient-to-br from-blue-50 to-indigo-50',
+      borderColor: 'border-blue-200',
+      iconColor: 'text-blue-600',
+      logos: ['💳', '💰']
     },
+
+    // PayPal
     {
-      id: 'wafacash',
-      nameAr: 'وفا كاش - Wafacash',
-      nameFr: 'Wafacash Mobile',
-      nameEn: 'Wafacash Mobile',
-      icon: Phone,
-      description: {
-        ar: 'الدفع عبر الهاتف المحمول مع وفا كاش. سريع وسهل ومريح',
-        fr: 'Paiement mobile avec Wafacash. Rapide, facile et pratique',
-        en: 'Mobile payment with Wafacash. Fast, easy and convenient'
-      },
-      features: {
-        ar: ['دفع عبر الهاتف', 'متوفر في جميع أنحاء المغرب', 'معاملات آمنة'],
-        fr: ['Paiement par téléphone', 'Disponible partout au Maroc', 'Transactions sécurisées'],
-        en: ['Phone payment', 'Available throughout Morocco', 'Secure transactions']
-      }
+      id: 'paypal',
+      name: 'PayPal',
+      description: text.paypalDesc,
+      icon: <DollarSign className="w-6 h-6" />,
+      available: true,
+      fee: 0,
+      badges: [
+        { text: text.securePayment, color: 'blue' },
+        { text: 'PayPal', color: 'indigo' }
+      ],
+      bgColor: 'bg-gradient-to-br from-indigo-50 to-purple-50',
+      borderColor: 'border-indigo-200',
+      iconColor: 'text-indigo-600',
+      logos: ['🅿️']
     },
+
+    // Bank Transfer
     {
-      id: 'card',
-      nameAr: 'بطاقة ائتمانية / خصم',
-      nameFr: 'Carte de crédit/débit',
-      nameEn: 'Credit/Debit Card',
-      icon: CreditCard,
-      description: {
-        ar: 'ادفع بأمان باستخدام بطاقتك الائتمانية أو بطاقة الخصم',
-        fr: 'Payez en toute sécurité avec votre carte de crédit ou de débit',
-        en: 'Pay securely with your credit or debit card'
-      },
-      features: {
-        ar: ['حماية SSL', 'قبول دولي', 'معالجة فورية'],
-        fr: ['Protection SSL', 'Acceptation internationale', 'Traitement instantané'],
-        en: ['SSL Protection', 'International acceptance', 'Instant processing']
-      }
+      id: 'bank_transfer',
+      name: text.bankTransfer,
+      description: text.bankTransferDesc,
+      icon: <Building2 className="w-6 h-6" />,
+      available: true,
+      fee: 0,
+      badges: [
+        { text: text.securePayment, color: 'gray' }
+      ],
+      bgColor: 'bg-gradient-to-br from-gray-50 to-slate-50',
+      borderColor: 'border-gray-200',
+      iconColor: 'text-gray-600',
+      logos: ['🏦']
+    },
+
+    // Mobile Payment
+    {
+      id: 'mobile_payment',
+      name: text.mobilePayment,
+      description: text.mobilePaymentDesc,
+      icon: <Smartphone className="w-6 h-6" />,
+      available: true,
+      fee: 0,
+      badges: [
+        { text: text.securePayment, color: 'purple' },
+        { text: 'SMS', color: 'orange' }
+      ],
+      bgColor: 'bg-gradient-to-br from-purple-50 to-pink-50',
+      borderColor: 'border-purple-200',
+      iconColor: 'text-purple-600',
+      logos: ['📱']
     }
   ];
 
-  const formatPrice = (amount) => {
-    return new Intl.NumberFormat(language === 'ar' ? 'ar-MA' : 'fr-MA', {
-      style: 'currency',
-      currency: 'MAD',
-      minimumFractionDigits: 2
-    }).format(amount);
-  };
-
-  const getMethodName = (method) => {
-    switch (language) {
-      case 'ar': return method.nameAr;
-      case 'fr': return method.nameFr;
-      default: return method.nameEn;
-    }
-  };
-
-  const getMethodDescription = (method) => {
-    return method.description[language] || method.description.en;
-  };
-
-  const getMethodFeatures = (method) => {
-    return method.features[language] || method.features.en;
+  const getBadgeColor = (color) => {
+    const colors = {
+      green: 'bg-green-100 text-green-700',
+      blue: 'bg-blue-100 text-blue-700',
+      amber: 'bg-amber-100 text-amber-700',
+      orange: 'bg-orange-100 text-orange-700',
+      purple: 'bg-purple-100 text-purple-700',
+      indigo: 'bg-indigo-100 text-indigo-700',
+      gray: 'bg-gray-100 text-gray-700'
+    };
+    return colors[color] || colors.gray;
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className={`text-lg font-semibold mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
-        {t('payment.methods')} 💳
+    <div className={`space-y-4 ${className}`}>
+      <h3 className={`text-xl font-semibold text-gray-900 mb-6 ${language === 'ar' ? 'font-arabic' : ''}`}>
+        {text.title}
       </h3>
 
-      {/* Free delivery notice */}
-      {orderAmount > 0 && (
-        <div className={`bg-green-50 border border-green-200 rounded-lg p-4 mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
-          <div className="flex items-center">
-            <MapPin className="h-5 w-5 text-green-600 mr-2" />
-            <span className="text-sm text-green-800 font-medium">
-              {orderAmount >= 300
-                ? (language === 'ar'
-                  ? '🎉 توصيل مجاني! طلبك أكثر من 300 درهم'
-                  : '🎉 Livraison gratuite! Votre commande dépasse 300 DH')
-                : (language === 'ar'
-                  ? `أضف ${formatPrice(300 - orderAmount)} للحصول على توصيل مجاني`
-                  : `Ajoutez ${formatPrice(300 - orderAmount)} pour la livraison gratuite`)
-              }
-            </span>
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {paymentMethods.map((method) => {
-          const IconComponent = method.icon;
-          const isSelected = selectedMethod === method.id;
-
-          return (
+      <div className="grid gap-4">
+        {paymentMethods.map((method) => (
+          <div key={method.id} className="relative">
             <div
-              key={method.id}
-              className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                isSelected
-                  ? 'border-blue-500 bg-blue-50'
+              onClick={() => method.available && onMethodSelect(method.id)}
+              className={`
+                relative p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer
+                ${method.available ? 'hover:shadow-lg' : 'opacity-50 cursor-not-allowed'}
+                ${selectedMethod === method.id
+                  ? `${method.borderColor} shadow-lg scale-[1.02]`
                   : 'border-gray-200 hover:border-gray-300'
-              } ${isRTL ? 'text-right' : 'text-left'}`}
-              onClick={() => onMethodChange(method.id)}
+                }
+                ${method.bgColor}
+              `}
             >
-              {/* Popular badge */}
-              {method.popular && (
-                <div className={`absolute top-2 ${isRTL ? 'left-2' : 'right-2'} bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium`}>
-                  {language === 'ar' ? 'الأكثر شعبية' : 'Le plus populaire'}
+              {/* Selection Indicator */}
+              {selectedMethod === method.id && (
+                <div className="absolute top-4 right-4 w-6 h-6 bg-brand-teal-600 rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-white" />
                 </div>
               )}
 
-              <div className="flex items-start space-x-3">
-                <input
-                  type="radio"
-                  name="payment_method"
-                  value={method.id}
-                  checked={isSelected}
-                  onChange={() => onMethodChange(method.id)}
-                  className={`mt-1 ${isRTL ? 'ml-3' : 'mr-3'}`}
-                />
+              {/* Unavailable Overlay */}
+              {!method.available && (
+                <div className="absolute inset-0 bg-gray-100/50 rounded-xl flex items-center justify-center">
+                  <div className="bg-white px-4 py-2 rounded-lg shadow-md">
+                    <div className="flex items-center space-x-2 text-gray-600">
+                      <AlertCircle className="w-5 h-5" />
+                      <span className="text-sm font-medium">
+                        {language === 'ar' ? 'غير متاح' : language === 'fr' ? 'Non disponible' : 'Not Available'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-                <IconComponent className={`h-6 w-6 text-blue-600 mt-1 flex-shrink-0 ${isRTL ? 'ml-3' : 'mr-3'}`} />
+              <div className="flex items-start space-x-4">
+                {/* Icon */}
+                <div className={`p-3 rounded-lg ${method.iconColor} ${method.bgColor}`}>
+                  {method.icon}
+                </div>
 
+                {/* Content */}
                 <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-gray-900">
-                      {getMethodName(method)}
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h4 className={`font-semibold text-gray-900 ${language === 'ar' ? 'font-arabic' : ''}`}>
+                      {method.name}
                     </h4>
-                    {method.id === 'cod' && deliveryFee > 0 && (
-                      <span className="text-sm text-orange-600 font-medium">
-                        + {formatPrice(deliveryFee)} {language === 'ar' ? 'توصيل' : 'livraison'}
+
+                    {/* Logos */}
+                    {method.logos && (
+                      <div className="flex space-x-1">
+                        {method.logos.map((logo, index) => (
+                          <span key={index} className="text-lg">{logo}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Fee */}
+                    {method.fee > 0 && (
+                      <span className="text-sm text-gray-600 ml-auto">
+                        +{method.fee} {language === 'ar' ? 'درهم' : 'DH'}
                       </span>
                     )}
                   </div>
 
-                  <p className="text-sm text-gray-600 mt-1">
-                    {getMethodDescription(method)}
+                  <p className={`text-gray-600 text-sm mb-3 ${language === 'ar' ? 'font-arabic' : ''}`}>
+                    {method.description}
                   </p>
 
-                  {/* Features */}
-                  <div className="mt-2">
-                    <ul className="text-xs text-gray-500 space-y-1">
-                      {getMethodFeatures(method).map((feature, index) => (
-                        <li key={index} className="flex items-center">
-                          <span className={`w-1.5 h-1.5 bg-green-500 rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
+                  {/* Badges */}
+                  <div className="flex flex-wrap gap-2">
+                    {method.badges.map((badge, index) => (
+                      <span
+                        key={index}
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBadgeColor(badge.color)}`}
+                      >
+                        {badge.text}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
-
-              {/* Delivery zone info for COD */}
-              {method.id === 'cod' && isSelected && shippingCity && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <div className="text-sm text-gray-600">
-                    <MapPin className="h-4 w-4 inline mr-1" />
-                    {language === 'ar'
-                      ? `منطقة التوصيل: ${shippingCity}`
-                      : `Zone de livraison: ${shippingCity}`
-                    }
-                  </div>
-                  {deliveryFee === 0 && orderAmount >= 300 && (
-                    <div className="text-sm text-green-600 font-medium mt-1">
-                      ✅ {language === 'ar' ? 'توصيل مجاني' : 'Livraison gratuite'}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
-          );
-        })}
+
+            {/* Bank Transfer Details */}
+            {method.id === 'bank_transfer' && selectedMethod === 'bank_transfer' && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <button
+                  onClick={() => setShowBankDetails(!showBankDetails)}
+                  className="flex items-center space-x-2 text-brand-teal-600 hover:text-brand-teal-700 transition-colors mb-3"
+                >
+                  <Info className="w-4 h-4" />
+                  <span className="text-sm font-medium">
+                    {showBankDetails ? text.hideBankDetails : text.showBankDetails}
+                  </span>
+                </button>
+
+                {showBankDetails && (
+                  <div className="space-y-3 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="font-medium text-gray-700">{text.bankName}:</label>
+                        <p className="text-gray-600">Banque Populaire du Maroc</p>
+                      </div>
+                      <div>
+                        <label className="font-medium text-gray-700">{text.accountHolder}:</label>
+                        <p className="text-gray-600">Droguerie Jamal SARL</p>
+                      </div>
+                      <div>
+                        <label className="font-medium text-gray-700">{text.accountNumber}:</label>
+                        <p className="text-gray-600 font-mono">123456789012345</p>
+                      </div>
+                      <div>
+                        <label className="font-medium text-gray-700">RIB:</label>
+                        <p className="text-gray-600 font-mono">230110000123456789012345</p>
+                      </div>
+                      <div>
+                        <label className="font-medium text-gray-700">{text.iban}:</label>
+                        <p className="text-gray-600 font-mono">MA64230110000123456789012345</p>
+                      </div>
+                      <div>
+                        <label className="font-medium text-gray-700">{text.swift}:</label>
+                        <p className="text-gray-600 font-mono">BMCEMAMC</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-blue-800 text-sm">
+                        {language === 'ar'
+                          ? 'يرجى إرسال إثبات التحويل عبر الواتساب أو البريد الإلكتروني بعد إتمام التحويل'
+                          : language === 'fr'
+                          ? 'Veuillez envoyer la preuve de virement par WhatsApp ou email après le transfert'
+                          : 'Please send transfer proof via WhatsApp or email after completing the transfer'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
-      {/* Payment method specific info */}
-      {selectedMethod === 'cih_bank' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h5 className="font-semibold text-blue-900 mb-2">
-            {language === 'ar' ? 'معلومات الدفع - CIH Bank' : 'Informations de paiement - CIH Bank'}
-          </h5>
-          <p className="text-sm text-blue-800">
+      {/* Security Notice */}
+      <div className="mt-6 p-4 bg-brand-teal-50 rounded-lg border border-brand-teal-200">
+        <div className="flex items-center space-x-2 text-brand-teal-800">
+          <Check className="w-5 h-5" />
+          <span className={`text-sm font-medium ${language === 'ar' ? 'font-arabic' : ''}`}>
             {language === 'ar'
-              ? 'سيتم توجيهك إلى منصة CIH Bank الآمنة لإتمام عملية الدفع.'
-              : 'Vous serez redirigé vers la plateforme sécurisée de CIH Bank pour finaliser le paiement.'
+              ? 'جميع المدفوعات محمية بتشفير SSL وتتم معالجتها بأمان تام'
+              : language === 'fr'
+              ? 'Tous les paiements sont protégés par cryptage SSL et traités en toute sécurité'
+              : 'All payments are SSL encrypted and processed securely'
             }
-          </p>
+          </span>
         </div>
-      )}
-
-      {selectedMethod === 'bmce_bank' && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <h5 className="font-semibold text-green-900 mb-2">
-            {language === 'ar' ? 'معلومات الدفع - BMCE Bank' : 'Informations de paiement - BMCE Bank'}
-          </h5>
-          <p className="text-sm text-green-800">
-            {language === 'ar'
-              ? 'سيتم توجيهك إلى منصة BMCE Bank الآمنة لإتمام عملية الدفع.'
-              : 'Vous serez redirigé vers la plateforme sécurisée de BMCE Bank pour finaliser le paiement.'
-            }
-          </p>
-        </div>
-      )}
-
-      {selectedMethod === 'wafacash' && (
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-          <h5 className="font-semibold text-purple-900 mb-2">
-            {language === 'ar' ? 'معلومات الدفع - Wafacash' : 'Informations de paiement - Wafacash'}
-          </h5>
-          <p className="text-sm text-purple-800">
-            {language === 'ar'
-              ? 'سيتم إرسال كود التأكيد إلى هاتفك لإتمام الدفع عبر Wafacash.'
-              : 'Un code de confirmation sera envoyé à votre téléphone pour finaliser le paiement via Wafacash.'
-            }
-          </p>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

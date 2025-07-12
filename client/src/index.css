@@ -6,18 +6,87 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Root variables for theme consistency */
+/* Enhanced root variables for sophisticated Moroccan-inspired branding */
 :root {
-  --color-primary: #059669; /* Emerald green for Morocco */
-  --color-secondary: #dc2626; /* Red from Moroccan flag */
-  --color-accent: #f59e0b; /* Golden yellow */
-  --color-bg-light: #f8fafc;
-  --color-bg-dark: #1e293b;
-  --color-text-light: #1f2937;
-  --color-text-dark: #f1f5f9;
+  /* Primary brand colors - Sophisticated Moroccan palette */
+  --color-primary: #0f766e; /* Deep teal - main brand color */
+  --color-primary-light: #14b8a6; /* Lighter teal for hover states */
+  --color-primary-dark: #134e4a; /* Darker teal for emphasis */
+
+  /* Secondary colors - Warm terracotta inspired by Moroccan pottery */
+  --color-secondary: #c2410c; /* Terracotta orange */
+  --color-secondary-light: #ea580c; /* Lighter terracotta */
+  --color-secondary-dark: #9a3412; /* Darker terracotta */
+
+  /* Accent colors - Golden amber like Moroccan spices */
+  --color-accent: #f59e0b; /* Golden amber */
+  --color-accent-light: #fbbf24; /* Lighter amber */
+  --color-accent-dark: #d97706; /* Darker amber */
+
+  /* Neutral colors - Sophisticated warm neutrals */
+  --color-bg-light: #fafaf9;
+  --color-bg-secondary: #f5f5f4;
+  --color-bg-dark: #1c1917;
+  --color-text-light: #292524;
+  --color-text-secondary: #57534e;
+  --color-text-dark: #f5f5f4;
+
+  /* Success, warning, error colors */
+  --color-success: #059669;
+  --color-warning: #f59e0b;
+  --color-error: #dc2626;
+
+  /* Border and shadow colors */
+  --color-border: #e7e5e4;
+  --color-border-dark: #44403c;
+
+  /* CSS variables for shadcn/ui components */
+  --background: 250 250 249;
+  --foreground: 41 37 36;
+  --card: 250 250 249;
+  --card-foreground: 41 37 36;
+  --popover: 250 250 249;
+  --popover-foreground: 41 37 36;
+  --primary: 15 118 110;
+  --primary-foreground: 245 245 244;
+  --secondary: 231 229 228;
+  --secondary-foreground: 41 37 36;
+  --muted: 231 229 228;
+  --muted-foreground: 120 113 108;
+  --accent: 245 158 11;
+  --accent-foreground: 41 37 36;
+  --destructive: 220 38 38;
+  --destructive-foreground: 254 242 242;
+  --border: 231 229 228;
+  --input: 231 229 228;
+  --ring: 15 118 110;
+  --radius: 0.5rem;
 }
 
-/* Base styles */
+/* Dark theme variables */
+.dark {
+  --background: 28 25 23;
+  --foreground: 250 250 249;
+  --card: 28 25 23;
+  --card-foreground: 250 250 249;
+  --popover: 28 25 23;
+  --popover-foreground: 250 250 249;
+  --primary: 20 184 166;
+  --primary-foreground: 28 25 23;
+  --secondary: 68 64 60;
+  --secondary-foreground: 250 250 249;
+  --muted: 68 64 60;
+  --muted-foreground: 168 162 158;
+  --accent: 245 158 11;
+  --accent-foreground: 28 25 23;
+  --destructive: 239 68 68;
+  --destructive-foreground: 28 25 23;
+  --border: 68 64 60;
+  --input: 68 64 60;
+  --ring: 20 184 166;
+}
+
+/* Base styles with enhanced typography */
 * {
   box-sizing: border-box;
 }
@@ -32,18 +101,21 @@ body {
   color: var(--color-text-light);
   background-color: var(--color-bg-light);
   transition: all 0.3s ease;
+  font-weight: 400;
+  letter-spacing: 0.025em;
 }
 
-/* RTL Support */
+/* Enhanced RTL Support */
 [dir="rtl"] {
   text-align: right;
+  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
 }
 
 [dir="ltr"] {
   text-align: left;
+  font-family: 'Cairo', 'Inter', system-ui, sans-serif;
 }
 
-/* RTL-specific adjustments */
 .rtl {
   direction: rtl;
 }
@@ -52,182 +124,45 @@ body {
   direction: ltr;
 }
 
-/* RTL Flexbox utilities */
-.rtl .flex-row {
-  flex-direction: row-reverse;
+/* Enhanced button styles */
+.btn-primary {
+  @apply bg-brand-teal-700 hover:bg-brand-teal-800 text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl;
 }
 
-.rtl .space-x-2 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-x-reverse: 1;
-  margin-right: calc(0.5rem * var(--tw-space-x-reverse));
-  margin-left: calc(0.5rem * calc(1 - var(--tw-space-x-reverse)));
+.btn-secondary {
+  @apply bg-brand-terracotta-700 hover:bg-brand-terracotta-800 text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl;
 }
 
-.rtl .space-x-4 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-x-reverse: 1;
-  margin-right: calc(1rem * var(--tw-space-x-reverse));
-  margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
+.btn-accent {
+  @apply bg-brand-amber-500 hover:bg-brand-amber-600 text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl;
 }
 
-/* RTL Text alignment */
-.rtl .text-left {
-  text-align: right;
+/* Enhanced card styles */
+.card-elegant {
+  @apply bg-white rounded-xl shadow-elegant border border-gray-100 hover:shadow-warm transition-all duration-300;
 }
 
-.rtl .text-right {
-  text-align: left;
-}
-
-/* RTL Padding and margins */
-.rtl .pl-4 {
-  padding-left: 0;
-  padding-right: 1rem;
-}
-
-.rtl .pr-4 {
-  padding-right: 0;
-  padding-left: 1rem;
-}
-
-.rtl .ml-2 {
-  margin-left: 0;
-  margin-right: 0.5rem;
-}
-
-.rtl .mr-2 {
-  margin-right: 0;
-  margin-left: 0.5rem;
-}
-
-.rtl .ml-4 {
-  margin-left: 0;
-  margin-right: 1rem;
-}
-
-.rtl .mr-4 {
-  margin-right: 0;
-  margin-left: 1rem;
-}
-
-/* RTL Border radius */
-.rtl .rounded-l-lg {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  border-top-right-radius: 0.5rem;
-  border-bottom-right-radius: 0.5rem;
-}
-
-.rtl .rounded-r-lg {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  border-top-left-radius: 0.5rem;
-  border-bottom-left-radius: 0.5rem;
-}
-
-/* Arabic typography improvements */
-.arabic-text {
-  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
-  font-feature-settings: 'liga' 1, 'calt' 1;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Enhanced typography for different languages */
-[lang="ar"] {
-  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
-  line-height: 1.8;
-  letter-spacing: 0.025em;
-}
-
-[lang="en"] {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  line-height: 1.6;
-}
-
-[lang="fr"] {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  line-height: 1.6;
-}
-
-/* Custom utilities for Moroccan theme */
+/* Moroccan-inspired decorative elements */
 .moroccan-pattern {
-  background-image: linear-gradient(45deg, rgba(5, 150, 105, 0.05) 25%, transparent 25%),
-                    linear-gradient(-45deg, rgba(5, 150, 105, 0.05) 25%, transparent 25%),
-                    linear-gradient(45deg, transparent 75%, rgba(5, 150, 105, 0.05) 75%),
-                    linear-gradient(-45deg, transparent 75%, rgba(5, 150, 105, 0.05) 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230f766e' fill-opacity='0.05'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20m0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
-.gradient-moroccan {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+/* Loading animations */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
-.shadow-moroccan {
-  box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.1), 0 2px 4px -1px rgba(5, 150, 105, 0.06);
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-/* Loading spinner */
-.spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Smooth transitions */
-.transition-all {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-primary);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #047857;
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: var(--color-bg-dark);
-    color: var(--color-text-dark);
-  }
-}
-
-/* Responsive typography */
-@media (max-width: 640px) {
-  html {
-    font-size: 14px;
-  }
-
-  [lang="ar"] {
-    line-height: 1.9;
-  }
-}
-
-@media (min-width: 1024px) {
-  html {
-    font-size: 16px;
-  }
+/* Enhanced focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 /* Print styles */
@@ -235,98 +170,4 @@ body {
   .no-print {
     display: none !important;
   }
-
-  body {
-    font-size: 12pt;
-    line-height: 1.4;
-  }
-}
-
-/* Focus styles for accessibility */
-button:focus,
-input:focus,
-select:focus,
-textarea:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Custom form styles */
-.form-input {
-  @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors;
-}
-
-.rtl .form-input {
-  text-align: right;
-}
-
-/* Button styles */
-.btn-primary {
-  @apply bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
-}
-
-.btn-secondary {
-  @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors;
-}
-
-/* Card styles */
-.card {
-  @apply bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden;
-}
-
-.card-moroccan {
-  @apply bg-white rounded-lg shadow-moroccan border border-emerald-100 overflow-hidden;
-}
-
-/* Animation utilities */
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-in-out;
-}
-
-.animate-slide-in-right {
-  animation: slideInRight 0.5s ease-out;
-}
-
-.animate-slide-in-left {
-  animation: slideInLeft 0.5s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideInLeft {
-  from {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* RTL animation adjustments */
-.rtl .animate-slide-in-right {
-  animation: slideInLeft 0.5s ease-out;
-}
-
-.rtl .animate-slide-in-left {
-  animation: slideInRight 0.5s ease-out;
 }
