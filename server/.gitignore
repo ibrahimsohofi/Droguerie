@@ -1,0 +1,3 @@
+# Ignore mock database json files
+tmp/
+mockdb/*.json
