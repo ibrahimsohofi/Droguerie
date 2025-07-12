@@ -1,361 +1,256 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Phone, Clock, MapPin, X, Send, Users, Package, Truck, CreditCard } from 'lucide-react';
+import { MessageCircle, Phone, Clock, Users, Send, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 const WhatsAppBusinessWidget = ({
-  showWidget = true,
-  businessPhone = '+212522123456',
-  autoOpen = false
+  isOpen = false,
+  onToggle = () => {},
+  className = ""
 }) => {
-  const { language, isRTL, t } = useLanguage();
-  const [isOpen, setIsOpen] = useState(autoOpen);
+  const { language, isRTL, formatCurrency } = useLanguage();
+  const [isExpanded, setIsExpanded] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
   const [customMessage, setCustomMessage] = useState('');
 
-  // Business information
-  const businessInfo = {
-    ar: {
-      name: 'دروغري جمال',
-      address: 'شارع الحسن الثاني، الدار البيضاء، المغرب',
-      hours: 'الاثنين-السبت: 8:00-20:00، الأحد: 9:00-18:00',
-      email: 'contact@drogueriejamal.ma'
-    },
-    fr: {
-      name: 'Droguerie Jamal',
-      address: 'Avenue Hassan II, Casablanca, Maroc',
-      hours: 'Lun-Sam: 8h00-20h00, Dim: 9h00-18h00',
-      email: 'contact@drogueriejamal.ma'
-    },
-    en: {
-      name: 'Droguerie Jamal',
-      address: 'Hassan II Street, Casablanca, Morocco',
-      hours: 'Mon-Sat: 8:00-20:00, Sun: 9:00-18:00',
-      email: 'contact@drogueriejamal.ma'
+  // WhatsApp Business phone number (from environment)
+  const whatsappNumber = "+212522123456"; // Droguerie Jamal WhatsApp number
+
+  // Get text translations
+  const getText = () => {
+    return {
+      title: language === 'ar' ? 'تواصل معنا عبر واتساب' : language === 'fr' ? 'Contactez-nous via WhatsApp' : 'Contact us via WhatsApp',
+      subtitle: language === 'ar' ? 'نحن هنا لمساعدتك' : language === 'fr' ? 'Nous sommes là pour vous aider' : 'We are here to help you',
+      businessHours: language === 'ar' ? 'ساعات العمل' : language === 'fr' ? 'Heures d\'ouverture' : 'Business Hours',
+      weekdays: language === 'ar' ? 'الإثنين - السبت: 8:00 - 20:00' : language === 'fr' ? 'Lun - Sam: 8:00 - 20:00' : 'Mon - Sat: 8:00 - 20:00',
+      sunday: language === 'ar' ? 'الأحد: 9:00 - 18:00' : language === 'fr' ? 'Dim: 9:00 - 18:00' : 'Sun: 9:00 - 18:00',
+      quickOptions: language === 'ar' ? 'خيارات سريعة' : language === 'fr' ? 'Options rapides' : 'Quick Options',
+      customMessage: language === 'ar' ? 'رسالة مخصصة' : language === 'fr' ? 'Message personnalisé' : 'Custom Message',
+      typeMessage: language === 'ar' ? 'اكتب رسالتك هنا...' : language === 'fr' ? 'Tapez votre message ici...' : 'Type your message here...',
+      sendMessage: language === 'ar' ? 'إرسال الرسالة' : language === 'fr' ? 'Envoyer le message' : 'Send Message',
+      callUs: language === 'ar' ? 'اتصل بنا' : language === 'fr' ? 'Appelez-nous' : 'Call Us',
+      close: language === 'ar' ? 'إغلاق' : language === 'fr' ? 'Fermer' : 'Close',
+      onlineNow: language === 'ar' ? 'متصل الآن' : language === 'fr' ? 'En ligne maintenant' : 'Online now',
+      typicallyResponds: language === 'ar' ? 'يرد عادة خلال دقائق قليلة' : language === 'fr' ? 'Répond généralement en quelques minutes' : 'Typically responds in a few minutes',
+    };
+  };
+
+  // Quick message options
+  const getQuickOptions = () => {
+    return [
+      {
+        id: 'product_inquiry',
+        icon: '🛒',
+        title: language === 'ar' ? 'استفسار عن منتج' : language === 'fr' ? 'Demande de produit' : 'Product Inquiry',
+        message: language === 'ar' ? 'مرحباً، أريد الاستفسار عن منتج معين في دروغيري جمال.' : language === 'fr' ? 'Bonjour, je voudrais me renseigner sur un produit spécifique chez Droguerie Jamal.' : 'Hello, I would like to inquire about a specific product at Droguerie Jamal.'
+      },
+      {
+        id: 'order_status',
+        icon: '📦',
+        title: language === 'ar' ? 'حالة الطلب' : language === 'fr' ? 'Statut de commande' : 'Order Status',
+        message: language === 'ar' ? 'مرحباً، أريد التحقق من حالة طلبي.' : language === 'fr' ? 'Bonjour, je voudrais vérifier le statut de ma commande.' : 'Hello, I would like to check my order status.'
+      },
+      {
+        id: 'store_location',
+        icon: '📍',
+        title: language === 'ar' ? 'موقع المتجر' : language === 'fr' ? 'Localisation du magasin' : 'Store Location',
+        message: language === 'ar' ? 'مرحباً، أريد معرفة عنوان المتجر وساعات العمل.' : language === 'fr' ? 'Bonjour, je voudrais connaître l\'adresse du magasin et les heures d\'ouverture.' : 'Hello, I would like to know the store address and opening hours.'
+      },
+      {
+        id: 'delivery_info',
+        icon: '🚚',
+        title: language === 'ar' ? 'معلومات التوصيل' : language === 'fr' ? 'Informations de livraison' : 'Delivery Information',
+        message: language === 'ar' ? 'مرحباً، أريد الاستفسار عن خدمة التوصيل.' : language === 'fr' ? 'Bonjour, je voudrais me renseigner sur le service de livraison.' : 'Hello, I would like to inquire about delivery service.'
+      },
+      {
+        id: 'bulk_order',
+        icon: '🏢',
+        title: language === 'ar' ? 'طلب بالجملة' : language === 'fr' ? 'Commande en gros' : 'Bulk Order',
+        message: language === 'ar' ? 'مرحباً، أريد عمل طلب بالجملة لشركتي/مؤسستي.' : language === 'fr' ? 'Bonjour, je voudrais passer une commande en gros pour mon entreprise.' : 'Hello, I would like to place a bulk order for my business.'
+      },
+      {
+        id: 'complaint',
+        icon: '⚠️',
+        title: language === 'ar' ? 'شكوى أو مشكلة' : language === 'fr' ? 'Plainte ou problème' : 'Complaint or Issue',
+        message: language === 'ar' ? 'مرحباً، لدي شكوى أو مشكلة أريد حلها.' : language === 'fr' ? 'Bonjour, j\'ai une plainte ou un problème que je voudrais résoudre.' : 'Hello, I have a complaint or issue I would like to resolve.'
+      }
+    ];
+  };
+
+  const text = getText();
+  const quickOptions = getQuickOptions();
+
+  // Check if currently within business hours
+  const isBusinessHours = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    const day = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+    if (day === 0) { // Sunday
+      return hour >= 9 && hour < 18;
+    } else { // Monday - Saturday
+      return hour >= 8 && hour < 20;
     }
   };
 
-  // Quick service options
-  const serviceOptions = {
-    ar: [
-      {
-        id: 'products',
-        icon: Package,
-        title: 'تصفح المنتجات',
-        description: 'استفسر عن منتجاتنا وأسعارها',
-        message: 'مرحباً! أود الاستفسار عن المنتجات المتوفرة في دروغري جمال.'
-      },
-      {
-        id: 'order',
-        icon: Phone,
-        title: 'الاستفسار عن طلب',
-        description: 'تتبع طلبك أو استفسر عن حالته',
-        message: 'مرحباً! أود الاستفسار عن حالة طلبي.'
-      },
-      {
-        id: 'consultation',
-        icon: Users,
-        title: 'استشارة دوائية',
-        description: 'احصل على استشارة مجانية',
-        message: 'مرحباً! أحتاج لاستشارة دوائية من فضلكم.'
-      },
-      {
-        id: 'delivery',
-        icon: Truck,
-        title: 'معلومات التوصيل',
-        description: 'اسأل عن أوقات ورسوم التوصيل',
-        message: 'مرحباً! أود الاستفسار عن خدمة التوصيل.'
-      },
-      {
-        id: 'payment',
-        icon: CreditCard,
-        title: 'طرق الدفع',
-        description: 'معرفة طرق الدفع المتاحة',
-        message: 'مرحباً! أود معرفة طرق الدفع المتاحة.'
-      }
-    ],
-    fr: [
-      {
-        id: 'products',
-        icon: Package,
-        title: 'Parcourir les produits',
-        description: 'Renseignements sur nos produits et prix',
-        message: 'Bonjour! Je souhaite me renseigner sur les produits disponibles chez Droguerie Jamal.'
-      },
-      {
-        id: 'order',
-        icon: Phone,
-        title: 'Suivi de commande',
-        description: 'Suivez votre commande ou demandez son statut',
-        message: 'Bonjour! Je souhaite me renseigner sur le statut de ma commande.'
-      },
-      {
-        id: 'consultation',
-        icon: Users,
-        title: 'Conseil pharmaceutique',
-        description: 'Obtenez des conseils gratuits',
-        message: 'Bonjour! J\'aurais besoin d\'un conseil pharmaceutique s\'il vous plaît.'
-      },
-      {
-        id: 'delivery',
-        icon: Truck,
-        title: 'Informations livraison',
-        description: 'Horaires et frais de livraison',
-        message: 'Bonjour! Je souhaite me renseigner sur le service de livraison.'
-      },
-      {
-        id: 'payment',
-        icon: CreditCard,
-        title: 'Modes de paiement',
-        description: 'Découvrez les options de paiement',
-        message: 'Bonjour! Je voudrais connaître les modes de paiement disponibles.'
-      }
-    ],
-    en: [
-      {
-        id: 'products',
-        icon: Package,
-        title: 'Browse Products',
-        description: 'Inquire about our products and prices',
-        message: 'Hello! I would like to inquire about products available at Droguerie Jamal.'
-      },
-      {
-        id: 'order',
-        icon: Phone,
-        title: 'Order Inquiry',
-        description: 'Track your order or ask about its status',
-        message: 'Hello! I would like to inquire about my order status.'
-      },
-      {
-        id: 'consultation',
-        icon: Users,
-        title: 'Pharmaceutical Consultation',
-        description: 'Get free consultation',
-        message: 'Hello! I would need a pharmaceutical consultation please.'
-      },
-      {
-        id: 'delivery',
-        icon: Truck,
-        title: 'Delivery Information',
-        description: 'Ask about delivery times and fees',
-        message: 'Hello! I would like to inquire about the delivery service.'
-      },
-      {
-        id: 'payment',
-        icon: CreditCard,
-        title: 'Payment Methods',
-        description: 'Learn about available payment options',
-        message: 'Hello! I would like to know about available payment methods.'
-      }
-    ]
-  };
-
-  // Generate WhatsApp link
-  const generateWhatsAppLink = (message) => {
-    const cleanPhone = businessPhone.replace(/[^\d]/g, '');
-    const fullPhone = cleanPhone.startsWith('212') ? cleanPhone : `212${cleanPhone.replace(/^0/, '')}`;
+  // Handle sending WhatsApp message
+  const sendWhatsAppMessage = (message) => {
     const encodedMessage = encodeURIComponent(message);
-    return `https://wa.me/${fullPhone}?text=${encodedMessage}`;
+    const whatsappUrl = `https://wa.me/${whatsappNumber.replace('+', '')}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   // Handle quick option selection
-  const handleOptionSelect = (option) => {
-    setSelectedOption(option);
-    const whatsappLink = generateWhatsAppLink(option.message);
-    window.open(whatsappLink, '_blank', 'noopener,noreferrer');
+  const handleQuickOption = (option) => {
+    sendWhatsAppMessage(option.message);
+    setIsExpanded(false);
   };
 
   // Handle custom message
   const handleCustomMessage = () => {
     if (customMessage.trim()) {
-      const whatsappLink = generateWhatsAppLink(customMessage);
-      window.open(whatsappLink, '_blank', 'noopener,noreferrer');
+      sendWhatsAppMessage(customMessage);
       setCustomMessage('');
+      setIsExpanded(false);
     }
   };
 
-  // Get current business info
-  const currentBusinessInfo = businessInfo[language] || businessInfo.ar;
-  const currentOptions = serviceOptions[language] || serviceOptions.ar;
-
-  // Check if currently open hours (Morocco timezone)
-  const isOpenNow = () => {
-    const now = new Date();
-    const moroccoTime = new Date(now.toLocaleString("en-US", {timeZone: "Africa/Casablanca"}));
-    const day = moroccoTime.getDay();
-    const hour = moroccoTime.getHours();
-
-    // Sunday = 0, Monday = 1, ..., Saturday = 6
-    if (day === 0) { // Sunday
-      return hour >= 9 && hour < 18;
-    } else { // Monday to Saturday
-      return hour >= 8 && hour < 20;
-    }
+  // Handle direct call
+  const handleDirectCall = () => {
+    window.open(`tel:${whatsappNumber}`, '_self');
   };
 
-  const businessOpen = isOpenNow();
+  if (!isExpanded) {
+    return (
+      <div className={`fixed bottom-6 ${isRTL ? 'left-6' : 'right-6'} z-50 ${className}`}>
+        <button
+          onClick={() => setIsExpanded(true)}
+          className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group"
+        >
+          <MessageCircle className="w-6 h-6" />
+          <div className="absolute -top-2 -right-2 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
 
-  if (!showWidget) return null;
+          {/* Tooltip */}
+          <div className={`absolute bottom-full mb-2 ${isRTL ? 'right-0' : 'left-0'} bg-gray-900 text-white text-sm px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap`}>
+            {text.title}
+          </div>
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className={`fixed bottom-6 z-50 ${isRTL ? 'left-6' : 'right-6'}`}>
-      {/* Chat Widget */}
-      {isOpen && (
-        <div className={`mb-4 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden ${isRTL ? 'text-right' : 'text-left'}`}>
-          {/* Header */}
-          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg">{currentBusinessInfo.name}</h3>
-                  <div className="flex items-center gap-1 text-green-100 text-sm">
-                    <div className={`w-2 h-2 rounded-full ${businessOpen ? 'bg-green-300' : 'bg-gray-300'}`}></div>
-                    <span>
-                      {businessOpen
-                        ? (language === 'ar' ? 'متاح الآن' : language === 'fr' ? 'En ligne' : 'Online now')
-                        : (language === 'ar' ? 'غير متاح' : language === 'fr' ? 'Hors ligne' : 'Offline')
-                      }
+    <div className={`fixed bottom-6 ${isRTL ? 'left-6' : 'right-6'} z-50 ${className}`}>
+      <div className="bg-white rounded-lg shadow-2xl w-80 max-w-[calc(100vw-3rem)] overflow-hidden">
+        {/* Header */}
+        <div className="bg-green-500 text-white p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+              <div className="relative">
+                <MessageCircle className="w-8 h-8" />
+                {isBusinessHours() && (
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-300 rounded-full border-2 border-white"></div>
+                )}
+              </div>
+              <div>
+                <h3 className={`font-semibold ${language === 'ar' ? 'font-arabic' : ''}`}>
+                  دروغيري جمال
+                </h3>
+                <p className={`text-xs text-green-100 ${language === 'ar' ? 'font-arabic' : ''}`}>
+                  {isBusinessHours() ? text.onlineNow : text.typicallyResponds}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsExpanded(false)}
+              className="text-white hover:text-green-200 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 max-h-96 overflow-y-auto">
+          {/* Business Hours */}
+          <div className="bg-gray-50 rounded-lg p-3 mb-4">
+            <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2">
+              <Clock className="w-4 h-4 text-gray-600" />
+              <span className={`text-sm font-medium text-gray-800 ${language === 'ar' ? 'font-arabic' : ''}`}>
+                {text.businessHours}
+              </span>
+            </div>
+            <div className={`text-xs text-gray-600 space-y-1 ${language === 'ar' ? 'font-arabic' : ''}`}>
+              <div>{text.weekdays}</div>
+              <div>{text.sunday}</div>
+            </div>
+          </div>
+
+          {/* Quick Options */}
+          <div className="space-y-3">
+            <h4 className={`text-sm font-semibold text-gray-800 ${language === 'ar' ? 'font-arabic' : ''}`}>
+              {text.quickOptions}
+            </h4>
+
+            <div className="grid grid-cols-2 gap-2">
+              {quickOptions.map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => handleQuickOption(option)}
+                  className="p-3 bg-gray-50 hover:bg-green-50 border border-gray-200 hover:border-green-200 rounded-lg transition-colors text-left rtl:text-right group"
+                >
+                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <span className="text-lg">{option.icon}</span>
+                    <span className={`text-xs font-medium text-gray-700 group-hover:text-green-700 ${language === 'ar' ? 'font-arabic' : ''}`}>
+                      {option.title}
                     </span>
                   </div>
-                </div>
-              </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Custom Message */}
+          <div className="mt-4 space-y-3">
+            <h4 className={`text-sm font-semibold text-gray-800 ${language === 'ar' ? 'font-arabic' : ''}`}>
+              {text.customMessage}
+            </h4>
+
+            <div className="space-y-2">
+              <textarea
+                value={customMessage}
+                onChange={(e) => setCustomMessage(e.target.value)}
+                placeholder={text.typeMessage}
+                className={`w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${language === 'ar' ? 'font-arabic text-right' : ''}`}
+                rows={3}
+              />
+
               <button
-                onClick={() => setIsOpen(false)}
-                className="text-green-100 hover:text-white transition-colors"
+                onClick={handleCustomMessage}
+                disabled={!customMessage.trim()}
+                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2 rtl:space-x-reverse disabled:cursor-not-allowed"
               >
-                <X className="w-5 h-5" />
+                <Send className="w-4 h-4" />
+                <span className={language === 'ar' ? 'font-arabic' : ''}>
+                  {text.sendMessage}
+                </span>
               </button>
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-4 max-h-96 overflow-y-auto">
-            {/* Welcome Message */}
-            <div className="mb-4 p-3 bg-green-50 rounded-lg">
-              <p className="text-sm text-green-800 leading-relaxed">
-                {language === 'ar'
-                  ? '👋 مرحباً بك! كيف يمكننا مساعدتك اليوم؟'
-                  : language === 'fr'
-                  ? '👋 Bienvenue! Comment pouvons-nous vous aider?'
-                  : '👋 Welcome! How can we help you today?'
-                }
-              </p>
-            </div>
-
-            {/* Quick Options */}
-            <div className="space-y-2 mb-4">
-              <h4 className="font-semibold text-gray-700 text-sm mb-3">
-                {language === 'ar'
-                  ? 'خدمات سريعة:'
-                  : language === 'fr'
-                  ? 'Services rapides:'
-                  : 'Quick Services:'
-                }
-              </h4>
-
-              {currentOptions.map((option) => {
-                const IconComponent = option.icon;
-                return (
-                  <button
-                    key={option.id}
-                    onClick={() => handleOptionSelect(option)}
-                    className="w-full p-3 text-left rounded-lg border border-gray-200 hover:border-green-500 hover:bg-green-50 transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <IconComponent className="w-5 h-5 text-green-600 group-hover:text-green-700" />
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900 text-sm">{option.title}</div>
-                        <div className="text-xs text-gray-500">{option.description}</div>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Custom Message */}
-            <div className="space-y-3">
-              <h4 className="font-semibold text-gray-700 text-sm">
-                {language === 'ar'
-                  ? 'أو اكتب رسالتك:'
-                  : language === 'fr'
-                  ? 'Ou écrivez votre message:'
-                  : 'Or write your message:'
-                }
-              </h4>
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  placeholder={
-                    language === 'ar'
-                      ? 'اكتب رسالتك هنا...'
-                      : language === 'fr'
-                      ? 'Écrivez votre message...'
-                      : 'Type your message...'
-                  }
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  onKeyPress={(e) => e.key === 'Enter' && handleCustomMessage()}
-                />
-                <button
-                  onClick={handleCustomMessage}
-                  disabled={!customMessage.trim()}
-                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Business Info */}
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="space-y-2 text-xs text-gray-600">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span>{currentBusinessInfo.hours}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>{currentBusinessInfo.address}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  <span>{businessPhone}</span>
-                </div>
-              </div>
-            </div>
+          {/* Direct Call Button */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <button
+              onClick={handleDirectCall}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2 rtl:space-x-reverse"
+            >
+              <Phone className="w-4 h-4" />
+              <span className={language === 'ar' ? 'font-arabic' : ''}>
+                {text.callUs}
+              </span>
+            </button>
           </div>
         </div>
-      )}
-
-      {/* Toggle Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
-        aria-label={language === 'ar' ? 'فتح الدردشة' : language === 'fr' ? 'Ouvrir le chat' : 'Open chat'}
-      >
-        {isOpen ? (
-          <X className="w-6 h-6" />
-        ) : (
-          <MessageCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
-        )}
-
-        {/* Online indicator */}
-        {businessOpen && !isOpen && (
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
-        )}
-
-        {/* WhatsApp logo indicator */}
-        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center">
-          <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.108"/>
-          </svg>
-        </div>
-      </button>
+      </div>
     </div>
   );
 };
