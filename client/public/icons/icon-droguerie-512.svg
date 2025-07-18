@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with Moroccan pattern -->
+  <defs>
+    <!-- Moroccan-inspired gradient -->
+    <radialGradient id="bgGradient" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+    </radialGradient>
+
+    <!-- Geometric pattern -->
+    <pattern id="moroccanPattern" patternUnits="userSpaceOnUse" width="40" height="40">
+      <rect width="40" height="40" fill="none"/>
+      <path d="M20,5 L35,20 L20,35 L5,20 Z" fill="#065f46" opacity="0.1"/>
+    </pattern>
+  </defs>
+
+  <!-- Background circle with pattern -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGradient)" stroke="#047857" stroke-width="8"/>
+  <circle cx="256" cy="256" r="230" fill="url(#moroccanPattern)"/>
+
+  <!-- Main shopping cart with household items -->
+  <g transform="translate(256, 256)">
+    <!-- Cart body - larger and more prominent -->
+    <path d="M-90 -70 L-65 -70 L-55 -30 L75 -30 L65 30 L-45 30 Z"
+          fill="#ffffff" stroke="#e5e7eb" stroke-width="4" rx="5"/>
+
+    <!-- Cart handle -->
+    <path d="M-90 -70 L-105 -90 L-80 -90"
+          fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+
+    <!-- Cart wheels -->
+    <circle cx="-25" cy="50" r="12" fill="#ffffff" stroke="#047857" stroke-width="3"/>
+    <circle cx="35" cy="50" r="12" fill="#ffffff" stroke="#047857" stroke-width="3"/>
+
+    <!-- Household Items in Cart -->
+
+    <!-- Cleaning supplies bottle -->
+    <rect x="-45" y="-60" width="15" height="40" rx="3" fill="#10b981"/>
+    <rect x="-42" y="-68" width="9" height="12" rx="2" fill="#059669"/>
+    <circle cx="-37.5" cy="-62" r="2" fill="#ffffff"/>
+
+    <!-- Detergent box -->
+    <rect x="-20" y="-55" width="25" height="20" rx="3" fill="#f59e0b"/>
+    <rect x="-17" y="-52" width="19" height="3" fill="#d97706"/>
+    <rect x="-17" y="-47" width="19" height="2" fill="#d97706"/>
+
+    <!-- Personal care product -->
+    <ellipse cx="10" cy="-45" rx="6" ry="20" fill="#ec4899"/>
+    <rect x="4" y="-68" width="12" height="8" rx="2" fill="#db2777"/>
+
+    <!-- Household tool/brush -->
+    <rect x="25" y="-60" width="4" height="35" fill="#6b7280"/>
+    <ellipse cx="27" cy="-65" rx="8" ry="4" fill="#ef4444"/>
+
+    <!-- Small bottles/tubes -->
+    <rect x="40" y="-50" width="8" height="25" rx="2" fill="#8b5cf6"/>
+    <rect x="50" y="-45" width="6" height="20" rx="2" fill="#06b6d4"/>
+  </g>
+
+  <!-- Moroccan decorative elements -->
+  <g opacity="0.3">
+    <!-- Corner decorations -->
+    <path d="M50,50 Q70,70 50,90 Q30,70 50,50" fill="#065f46"/>
+    <path d="M462,50 Q442,70 462,90 Q482,70 462,50" fill="#065f46"/>
+    <path d="M50,462 Q70,442 50,422 Q30,442 50,462" fill="#065f46"/>
+    <path d="M462,462 Q442,442 462,422 Q482,442 462,462" fill="#065f46"/>
+  </g>
+
+  <!-- Store name in Arabic and French -->
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="42" font-weight="bold"
+        text-anchor="middle" fill="#ffffff">دروغيري جمال</text>
+  <text x="256" y="450" font-family="Arial, sans-serif" font-size="28" font-weight="normal"
+        text-anchor="middle" fill="#ffffff" opacity="0.9">Droguerie Jamal</text>
+
+  <!-- Small star decoration -->
+  <path d="M256,80 L260,90 L270,90 L262,97 L265,107 L256,100 L247,107 L250,97 L242,90 L252,90 Z"
+        fill="#fbbf24" opacity="0.8"/>
+</svg>
