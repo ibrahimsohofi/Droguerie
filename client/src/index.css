@@ -1,0 +1,231 @@
+/* Import Arabic-friendly fonts */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+/* Font family classes for multi-language support */
+.font-arabic {
+  font-family: 'Cairo', 'Noto Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Line clamp utility for text truncation */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dark mode support */
+@layer base {
+  html {
+    @apply transition-colors duration-300;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html.light {
+    color-scheme: light;
+  }
+}
+
+/* Custom tool pattern background */
+.tools-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f97316' fill-opacity='0.1'%3E%3Cpath d='M10 10h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4z'/%3E%3Cpath d='M2 2l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.tools-pattern-dark {
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f97316' fill-opacity='0.05'%3E%3Cpath d='M10 10h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4zm6 0h4v4h-4z'/%3E%3Cpath d='M2 2l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2zm4 0l2 2-2 2-2-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Enhanced tool pattern for hardware store */
+.hardware-pattern {
+  background-color: #1e3a8a;
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f97316' fill-opacity='0.15'%3E%3Cpath d='M30 30m-10 0a10 10 0 1 1 20 0a10 10 0 1 1-20 0'/%3E%3Cpath d='M10 10l5 0 0 5-5 0zm10 0l5 0 0 5-5 0zm10 0l5 0 0 5-5 0zm10 0l5 0 0 5-5 0zm10 0l5 0 0 5-5 0z'/%3E%3Cpath d='M0 0l3 3-3 3-3-3zm60 0l3 3-3 3-3-3zm0 60l3 3-3 3-3-3zm-60 0l3 3-3 3-3-3z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Enhanced root variables for sophisticated Moroccan-inspired branding */
+:root {
+  /* Primary brand colors - Sophisticated Moroccan palette */
+  --color-primary: #0f766e; /* Deep teal - main brand color */
+  --color-primary-light: #14b8a6; /* Lighter teal for hover states */
+  --color-primary-dark: #134e4a; /* Darker teal for emphasis */
+
+  /* Secondary colors - Warm terracotta inspired by Moroccan pottery */
+  --color-secondary: #c2410c; /* Terracotta orange */
+  --color-secondary-light: #ea580c; /* Lighter terracotta */
+  --color-secondary-dark: #9a3412; /* Darker terracotta */
+
+  /* Accent colors - Golden amber like Moroccan spices */
+  --color-accent: #f59e0b; /* Golden amber */
+  --color-accent-light: #fbbf24; /* Lighter amber */
+  --color-accent-dark: #d97706; /* Darker amber */
+
+  /* Neutral colors - Sophisticated warm neutrals */
+  --color-bg-light: #fafaf9;
+  --color-bg-secondary: #f5f5f4;
+  --color-bg-dark: #1c1917;
+  --color-text-light: #292524;
+  --color-text-secondary: #57534e;
+  --color-text-dark: #f5f5f4;
+
+  /* Success, warning, error colors */
+  --color-success: #059669;
+  --color-warning: #f59e0b;
+  --color-error: #dc2626;
+
+  /* Border and shadow colors */
+  --color-border: #e7e5e4;
+  --color-border-dark: #44403c;
+
+  /* CSS variables for shadcn/ui components */
+  --background: 250 250 249;
+  --foreground: 41 37 36;
+  --card: 250 250 249;
+  --card-foreground: 41 37 36;
+  --popover: 250 250 249;
+  --popover-foreground: 41 37 36;
+  --primary: 15 118 110;
+  --primary-foreground: 245 245 244;
+  --secondary: 231 229 228;
+  --secondary-foreground: 41 37 36;
+  --muted: 231 229 228;
+  --muted-foreground: 120 113 108;
+  --accent: 245 158 11;
+  --accent-foreground: 41 37 36;
+  --destructive: 220 38 38;
+  --destructive-foreground: 254 242 242;
+  --border: 231 229 228;
+  --input: 231 229 228;
+  --ring: 15 118 110;
+  --radius: 0.5rem;
+}
+
+/* Dark theme variables */
+.dark {
+  --background: 28 25 23;
+  --foreground: 250 250 249;
+  --card: 28 25 23;
+  --card-foreground: 250 250 249;
+  --popover: 28 25 23;
+  --popover-foreground: 250 250 249;
+  --primary: 20 184 166;
+  --primary-foreground: 28 25 23;
+  --secondary: 68 64 60;
+  --secondary-foreground: 250 250 249;
+  --muted: 68 64 60;
+  --muted-foreground: 168 162 158;
+  --accent: 245 158 11;
+  --accent-foreground: 28 25 23;
+  --destructive: 239 68 68;
+  --destructive-foreground: 28 25 23;
+  --border: 68 64 60;
+  --input: 68 64 60;
+  --ring: 20 184 166;
+}
+
+/* Base styles with enhanced typography */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Cairo', 'Noto Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  line-height: 1.6;
+  color: var(--color-text-light);
+  background-color: var(--color-bg-light);
+  transition: all 0.3s ease;
+  font-weight: 400;
+  letter-spacing: 0.025em;
+}
+
+/* Enhanced RTL Support */
+[dir="rtl"] {
+  text-align: right;
+  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
+}
+
+[dir="ltr"] {
+  text-align: left;
+  font-family: 'Cairo', 'Inter', system-ui, sans-serif;
+}
+
+.rtl {
+  direction: rtl;
+}
+
+.ltr {
+  direction: ltr;
+}
+
+/* Enhanced button styles */
+.btn-primary {
+  @apply bg-brand-teal-700 hover:bg-brand-teal-800 text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl;
+}
+
+.btn-secondary {
+  @apply bg-brand-terracotta-700 hover:bg-brand-terracotta-800 text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl;
+}
+
+.btn-accent {
+  @apply bg-brand-amber-500 hover:bg-brand-amber-600 text-white font-medium px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl;
+}
+
+/* Enhanced card styles */
+.card-elegant {
+  @apply bg-white rounded-xl shadow-elegant border border-gray-100 hover:shadow-warm transition-all duration-300;
+}
+
+/* Moroccan-inspired decorative elements */
+.moroccan-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230f766e' fill-opacity='0.05'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20m0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Loading animations */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Enhanced focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

@@ -1,0 +1,50 @@
+# =================================================================
+# DROGUERIE JAMAL - FRONTEND STATIC DEPLOYMENT
+# =================================================================
+# This deploys only the React frontend as a static site
+# Backend API should be deployed separately to a Node.js hosting service
+
+[build]
+  command = "bun install && bun run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# =================================================================
+# REDIRECTS & ROUTING
+# =================================================================
+
+# SPA routing - all routes go to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# =================================================================
+# HEADERS FOR SECURITY & PERFORMANCE
+# =================================================================
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# =================================================================
+# IMAGE OPTIMIZATION
+# =================================================================
+[images]
+  remote_images = [
+    "https://source.unsplash.com/.*",
+    "https://images.unsplash.com/.*",
+    "https://ext.same-assets.com/.*",
+    "https://ugc.same-assets.com/.*"
+  ]

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Droguerie Jamal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .offline-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .offline-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .offline-features {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+
+        .offline-features h3 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4ade80;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .retry-btn {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 1rem 0.5rem;
+            min-width: 150px;
+        }
+
+        .retry-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(74, 222, 128, 0.3);
+        }
+
+        .home-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+
+        .home-btn:hover {
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .connection-status {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 10px;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .connection-status.online {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .loading-dots {
+            display: inline-block;
+        }
+
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        @media (max-width: 768px) {
+            .offline-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            p {
+                font-size: 1rem;
+            }
+
+            .retry-btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 1rem;
+                margin: 0.5rem 0.25rem;
+                min-width: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">
+            📱
+        </div>
+
+        <h1>You're Offline</h1>
+        <p>No internet connection detected. Don't worry - you can still browse your cart and recently viewed products!</p>
+
+        <div class="offline-features">
+            <h3>Available Offline:</h3>
+            <ul class="feature-list">
+                <li>View your shopping cart</li>
+                <li>Browse recently viewed products</li>
+                <li>Access saved product comparisons</li>
+                <li>View your profile information</li>
+                <li>Read cached product details</li>
+            </ul>
+        </div>
+
+        <div class="connection-status" id="connectionStatus">
+            <span id="statusText">🔴 Offline - Checking connection</span>
+            <span class="loading-dots"></span>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <button class="retry-btn" onclick="checkConnection()">
+                🔄 Retry Connection
+            </button>
+            <button class="retry-btn home-btn" onclick="goToHomepage()">
+                🏠 Go to Homepage
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let isOnline = navigator.onLine;
+        let retryInterval;
+
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('statusText');
+            const containerElement = document.getElementById('connectionStatus');
+
+            if (navigator.onLine) {
+                statusElement.innerHTML = '🟢 Back Online - Redirecting...';
+                containerElement.className = 'connection-status online';
+
+                // Auto-redirect when back online
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+            } else {
+                statusElement.innerHTML = '🔴 Offline - Checking connection<span class="loading-dots"></span>';
+                containerElement.className = 'connection-status';
+            }
+        }
+
+        function checkConnection() {
+            updateConnectionStatus();
+
+            // Force a network request to check connectivity
+            fetch('/favicon.ico', {
+                method: 'HEAD',
+                cache: 'no-cache',
+                mode: 'no-cors'
+            }).then(() => {
+                if (!navigator.onLine) {
+                    // Sometimes navigator.onLine is not accurate
+                    window.location.reload();
+                }
+            }).catch(() => {
+                console.log('Still offline');
+            });
+        }
+
+        function goToHomepage() {
+            window.location.href = '/';
+        }
+
+        // Listen for online/offline events
+        window.addEventListener('online', () => {
+            isOnline = true;
+            updateConnectionStatus();
+        });
+
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            updateConnectionStatus();
+        });
+
+        // Periodic connection check
+        function startPeriodicCheck() {
+            retryInterval = setInterval(() => {
+                if (!navigator.onLine) {
+                    checkConnection();
+                }
+            }, 5000);
+        }
+
+        // Initialize
+        updateConnectionStatus();
+        startPeriodicCheck();
+
+        // Service Worker communication
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+                console.log('Service Worker ready for offline page');
+            });
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (retryInterval) {
+                clearInterval(retryInterval);
+            }
+        });
+    </script>
+</body>
+</html>

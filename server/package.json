@@ -1,0 +1,51 @@
+{
+  "name": "jamal-general-store-server",
+  "version": "1.0.0",
+  "description": "Backend API for Jamal General Store e-commerce platform",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "build": "npm install",
+    "railway:deploy": "npm install && npm run seed:production",
+    "seed": "node seedDatabase.js",
+    "seed:mysql": "node seedMysqlDatabase.js",
+    "seed:production": "node seedDatabase.js",
+    "migrate:mysql": "node migrate-to-mysql.js",
+    "setup:mysql": "mysql -u root -p < setup-mysql.sql",
+    "postinstall": "node seedDatabase.js"
+  },
+  "keywords": [
+    "ecommerce",
+    "general-store",
+    "morocco",
+    "api"
+  ],
+  "author": "Jamal General Store",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.10.0",
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^7.5.1",
+    "express-validator": "^7.2.1",
+    "google-auth-library": "^10.1.0",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.6.5",
+    "nodemailer": "^7.0.4",
+    "sqlite3": "^5.1.7",
+    "stripe": "^18.2.1",
+    "xss": "^1.0.15"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
